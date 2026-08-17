@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  App Sandbox is intentionally OFF.
+
+	  ZipBar needs the Accessibility API to enumerate and activate other
+	  apps' status items, which a sandboxed process cannot do. That also
+	  rules out Mac App Store distribution — the app ships signed with a
+	  Developer ID and notarized instead.
+	-->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+	<!-- Required so a hardened-runtime build can still dlopen system
+	     frameworks during backend probing. -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
+</dict>
+</plist>
