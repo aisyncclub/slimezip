@@ -1,3 +1,4 @@
+import ApplicationServices
 import AppKit
 import SwiftUI
 import ZipBarKit
@@ -11,7 +12,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Autosave name for the app's own control item.
     static let controlAutosaveName = "com.zipbar.control"
 
+    /// Asks macOS for Accessibility, which is the only way to learn which
+    /// app owns which menu bar icon on macOS 26.
+    ///
+    /// The system dialog is worth more than the settings pane alone: it
+    /// registers the app in the Accessibility list, so the user only has to
+    /// flip a toggle. Dragging a bundle into that list by hand is unreliable
+    /// on recent macOS, and an app that is not listed cannot be enabled at all.
+    private func requestAccessibilityIfNeeded() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        let trusted = AXIsProcessTrustedWithOptions(options)
+        FileHandle.standardError.write(Data("axTrustedAfterPrompt=\(trusted)\n".utf8))
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if ProcessInfo.processInfo.environment["ZIPBAR_REQUEST_AX"] == "1" {
+            requestAccessibilityIfNeeded()
+            NSApp.terminate(nil)
+            return
+        }
+
         // Repair and order our stored positions before a single status item
         // exists — once an item is created macOS has already read its saved
         // position, and a poisoned one puts the item off-screen where the
@@ -30,6 +50,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             emitDiagnostics()
             NSApp.terminate(nil)
             return
+        }
+
+        // Knowing which app owns which icon needs Accessibility, and that
+        // is the whole point of the app — so ask on launch when we lack it.
+        //
+        // This must run on a normal LaunchServices start and the app must
+        // keep running: macOS attributes the request to the process that
+        // makes it, so invoking the executable straight from a shell files it
+        // under the terminal instead of ZipBar, and the app never appears in
+        // the Accessibility list for the user to enable.
+        if !AXIsProcessTrusted() {
+            let key = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+            _ = AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
         }
 
         // Collapsed-state verification hook. Collapsing is what inflates the
@@ -82,6 +115,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Status items are not enumerable from outside, but NSStatusBar
         // reports the thickness it is managing for us.
         lines.append("menuBarThickness=\(NSStatusBar.system.thickness)")
+
+        // Whether we can see other apps' icons at all decides what the app
+        // can offer: without identity there is no list to show and nothing to
+        // move in or out, only the blind ⌘-drag the OS already provides. Run
+        // this from inside the bundle so the Accessibility grant applies.
+        lines.append("axTrusted=\(AXIsProcessTrusted())")
+        let sweep = AXSweepProbe().probe()
+        lines.append("axItems=\(sweep.items.count)")
+        for note in sweep.notes { lines.append("  note: \(note)") }
+        for item in sweep.items.prefix(40) {
+            lines.append("  · \(item.ownerName ?? "?") [\(item.bundleIdentifier ?? "-")] "
+                + "title=\(item.title ?? "-") frame=\(item.frame.map { "\(Int($0.origin.x)),\(Int($0.width))" } ?? "-")")
+        }
         FileHandle.standardError.write(Data((lines.joined(separator: "\n") + "\n").utf8))
     }
 

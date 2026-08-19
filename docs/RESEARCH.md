@@ -120,3 +120,51 @@ swift build && ./.build/debug/zipbar-probe capabilities
 ```
 
 각 백엔드가 그 OS에서 실제로 무엇을 반환하는지 5분 안에 알 수 있다.
+
+## macOS 26.5.2 — AX 열거는 동작한다 (2026-08-20 측정)
+
+앞서 기록한 창 소유권 오염(layer 25 창이 전부 제어 센터 소유로 보고됨)은
+사실이지만, **열거 자체가 막힌 것은 아니었다.** 접근성 권한을 부여한 뒤
+`AXSweepProbe`를 실제로 돌린 결과:
+
+```
+앱 85개 조회, 16개가 AXExtrasMenuBar를 노출, 아이템 35개
+```
+
+창 목록이 주지 못하는 것을 AX는 전부 준다.
+
+| | CGWindowList | AX 스윕 |
+|---|---|---|
+| 개수 | 52 | 35 |
+| 소유 앱 | 전부 "제어 센터" (무의미) | 정확 — Tailscale, 카카오톡, Outlook … |
+| 번들 ID | 없음 | 있음 |
+| 제목 | 없음 | 있음 — "Wi‑Fi, 연결됨, 3개의 막대", "두벌식" |
+| 좌표 | 있음 | 있음 |
+
+측정된 실제 항목(발췌):
+
+```
+Claude [com.anthropic.claudefordesktop]   frame=1020,42
+SSMenuAgent [com.apple.SSMenuAgent]       title=화면 공유       frame=1144,24
+ChatGPT [com.openai.codex]                title=ChatGPT        frame=1243,28
+카카오톡 [com.kakao.KakaoTalkMac]           frame=1285,24
+Tailscale [io.tailscale.ipn.macsys]       frame=1365,24
+Magnet [com.crowdcafe.windowmagnet]       frame=1529,24
+Microsoft Outlook [com.microsoft.Outlook] title=지금: 강의 자료…  frame=1567,24
+```
+
+### 이것이 바꾸는 것
+
+`Capabilities.canEnumerate`는 백엔드 고정값이 아니라 **접근성 권한 여부에
+따라 달라지는 런타임 값**이어야 한다. 권한이 있으면 목록 표기·항목 식별이
+가능하고, 없으면 ⌘드래그만 남는다.
+
+### 아직 확인되지 않은 것
+
+- **이동.** AX로 위치를 읽을 수는 있으나 쓰기가 되는지는 미검증.
+  `AXPress`는 클릭이고, 순서 변경은 macOS가 ⌘드래그로만 노출할 수 있다.
+- **숨김 항목의 좌표.** frame이 `0,0`이거나 x가 음수인 항목이 여럿 있다
+  (제어 센터 다수, 그리고 접힘 여부와 무관하게 Ollama·OneDrive). 화면 밖
+  항목인지, 다중 디스플레이 때문인지 구분이 필요하다.
+- **권한 지속성.** 애드혹 서명이라 리빌드마다 cdhash가 바뀌어 권한이 풀린다.
+  자체 서명 인증서 도입 전까지는 측정할 때마다 재부여가 필요하다.

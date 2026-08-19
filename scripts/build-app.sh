@@ -33,6 +33,8 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 # Ad-hoc signature. Enough for local runs; the Accessibility grant is tied to
 # the signature, so an unsigned binary would re-prompt on every rebuild.
 # Phase 5 replaces this with a Developer ID identity plus notarization.
+cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+
 echo "==> codesign (ad-hoc)"
 codesign --force --sign - \
   --entitlements "$ROOT/Resources/ZipBar.entitlements" \
