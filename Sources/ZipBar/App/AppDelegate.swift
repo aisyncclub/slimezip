@@ -60,8 +60,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func installControlItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.autosaveName = "com.zipbar.control"
-        item.button?.image = NSImage(
-            systemSymbolName: "rectangle.compress.vertical",
+        StatusItemGlyph.apply(
+            to: item.button,
+            symbolName: "rectangle.compress.vertical",
+            fallbackText: "ZB",
             accessibilityDescription: "ZipBar"
         )
         item.menu = buildMenu()

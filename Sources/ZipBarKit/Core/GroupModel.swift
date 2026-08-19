@@ -31,6 +31,18 @@ public struct MenuBarGroup: Identifiable, Codable, Hashable, Sendable {
     /// Grace period before auto-hide fires.
     public var autoHideDelay: TimeInterval
 
+    /// Chevron glyphs offered in settings. Kept on the model rather than in
+    /// the view so `SymbolAvailabilityTests` can assert every one of them
+    /// still resolves — a name that does not renders as an invisible status
+    /// item, which reads as the app having failed to launch.
+    public static let symbolChoices = [
+        "chevron.left", "chevron.left.2", "ellipsis.circle",
+        "square.stack.3d.up", "tray.full", "archivebox", "bolt.horizontal",
+    ]
+
+    /// Glyph shown on a chevron whose group is currently open.
+    public static let expandedSymbol = "chevron.right"
+
     public init(
         id: UUID = UUID(),
         name: String,

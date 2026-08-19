@@ -176,7 +176,12 @@ public final class SpacerStrategy: HidingStrategy {
         // Stable autosave names let macOS remember where the user dragged
         // each separator across launches.
         separator.autosaveName = "com.zipbar.separator.\(group.id.uuidString)"
-        separator.button?.image = Self.separatorImage()
+        StatusItemGlyph.apply(
+            to: separator.button,
+            symbolName: Self.separatorSymbol,
+            fallbackText: "|",
+            accessibilityDescription: "\(group.name) 구분자"
+        )
         separator.button?.toolTip = "\(group.name) 구분자 — 숨길 아이콘을 이 왼쪽에 ⌘드래그하세요"
 
         let chevron = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -188,16 +193,25 @@ public final class SpacerStrategy: HidingStrategy {
         items[group.id] = GroupItems(separator: separator, chevron: chevron)
         refreshChevron(for: group)
 
-        // Groups start shut so the bar is immediately tidier than before.
-        setCollapsed(true, for: group.id)
+        // Start expanded, never collapsed.
+        //
+        // A freshly installed group is empty, so collapsing it hides nothing
+        // useful — but the inflated separator still displaces whatever sits
+        // to its left, and until the user has ⌘-dragged anything that means
+        // our own chevron and control item. Collapsing on install made the
+        // app look like it had failed to launch. Collapse is a deliberate
+        // act, after the user has put icons in the group.
+        setCollapsed(false, for: group.id)
     }
 
     private func refreshChevron(for group: MenuBarGroup) {
         guard let entry = items[group.id] else { return }
         let collapsed = SpacerGeometry.isCollapsed(length: entry.separator.length)
-        let symbol = collapsed ? group.symbolName : "chevron.right"
-        entry.chevron.button?.image = NSImage(
-            systemSymbolName: symbol,
+        let symbol = collapsed ? group.symbolName : MenuBarGroup.expandedSymbol
+        StatusItemGlyph.apply(
+            to: entry.chevron.button,
+            symbolName: symbol,
+            fallbackText: collapsed ? "‹" : "›",
             accessibilityDescription: "\(group.name) \(collapsed ? "펴기" : "접기")"
         )
         entry.chevron.button?.toolTip = "\(group.name) — \(collapsed ? "펴기" : "접기")"
@@ -220,7 +234,7 @@ public final class SpacerStrategy: HidingStrategy {
         NSScreen.screens.map(\.frame.width).max() ?? NSScreen.main?.frame.width ?? 1_440
     }
 
-    private static func separatorImage() -> NSImage? {
-        NSImage(systemSymbolName: "line.3.vertical", accessibilityDescription: "구분자")
-    }
+    /// Two upright bars read unambiguously as a divider at menu bar size.
+    /// (`line.3.vertical`, used previously, is not a real SF Symbol.)
+    nonisolated static let separatorSymbol = "pause.fill"
 }

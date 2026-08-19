@@ -5,12 +5,6 @@ struct GroupListView: View {
     @ObservedObject var engine: MenuBarEngine
     @State private var selection: MenuBarGroup.ID?
 
-    /// Chevron glyphs that read sensibly at menu bar size.
-    private static let symbolChoices = [
-        "chevron.left", "chevron.left.2", "ellipsis.circle",
-        "square.stack.3d.up", "tray.full", "archivebox", "bolt.horizontal",
-    ]
-
     var body: some View {
         HSplitView {
             groupList
@@ -110,7 +104,7 @@ struct GroupListView: View {
                 TextField("이름", text: bound.name)
 
                 Picker("셰브론", selection: bound.symbolName) {
-                    ForEach(Self.symbolChoices, id: \.self) { symbol in
+                    ForEach(MenuBarGroup.symbolChoices, id: \.self) { symbol in
                         Label(symbol, systemImage: symbol).tag(symbol)
                     }
                 }
