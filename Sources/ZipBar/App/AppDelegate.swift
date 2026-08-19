@@ -8,7 +8,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var controlItem: NSStatusItem?
     private var settingsWindow: NSWindow?
 
+    /// Autosave name for the app's own control item.
+    static let controlAutosaveName = "com.zipbar.control"
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Repair and order our stored positions before a single status item
+        // exists — once an item is created macOS has already read its saved
+        // position, and a poisoned one puts the item off-screen where the
+        // user cannot reach it. See StatusItemPlacement for how a profile
+        // gets poisoned in the first place.
+        prepareItemPlacement()
+
         engine.start()
         installControlItem()
 
@@ -22,6 +32,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Collapsed-state verification hook. Collapsing is what inflates the
+        // separator, and an inflated separator is what once pushed our own
+        // chevron and control item off-screen — so the collapsed state is
+        // exactly the one that needs checking from outside the app.
+        // ZIPBAR_START_COLLAPSED=1 enters it directly and keeps running.
+        if ProcessInfo.processInfo.environment["ZIPBAR_START_COLLAPSED"] == "1" {
+            engine.collapseAll()
+        }
+
         // First run: explain the ⌘-drag step, because with the spacer backend
         // nothing appears to happen until the user arranges their icons.
         if !UserDefaults.standard.bool(forKey: Self.onboardingShownKey) {
@@ -30,12 +49,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Orders our items left to right as [separator, chevron, …, control]
+    /// and discards any stored position that lies off every display.
+    private func prepareItemPlacement() {
+        let names = SpacerStrategy.autosaveNames(for: engine.layout) + [Self.controlAutosaveName]
+        let width = StatusItemPlacement.widestScreenWidth()
+
+        let repaired = StatusItemPlacement.sanitize(autosaveNames: names, widestScreenWidth: width)
+        let moved = StatusItemPlacement.enforceOrder(leftToRight: names, widestScreenWidth: width)
+
+        if !repaired.isEmpty || !moved.isEmpty {
+            placementReport = "repaired=\(repaired.count) moved=\(moved.count)"
+        }
+    }
+
+    /// Surfaced through the diagnostic report so a repair is observable.
+    private var placementReport: String?
+
     /// Report what actually reached the menu bar.
     private func emitDiagnostics() {
         var lines = [
             "backend=\(engine.capabilities.backend.rawValue)",
             "groups=\(engine.layout.groups.count)",
             "controlItem=\(controlItem?.button != nil ? "ok" : "missing")",
+            "controlItemVisible=\(controlItem?.isVisible ?? false)",
+            "placement=\(placementReport ?? "unchanged")",
         ]
         for group in engine.layout.groups {
             let collapsed = engine.collapseState[group.id] ?? false

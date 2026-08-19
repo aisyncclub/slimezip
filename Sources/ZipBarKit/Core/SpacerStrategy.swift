@@ -171,11 +171,27 @@ public final class SpacerStrategy: HidingStrategy {
 
     // MARK: - Status item plumbing
 
+    /// Stable autosave names let macOS remember where the user dragged each
+    /// item across launches. Built here rather than inline so `StatusItemPlacement`
+    /// can address the same items before any of them exist.
+    public nonisolated static func separatorAutosaveName(_ id: MenuBarGroup.ID) -> String {
+        "com.zipbar.separator.\(id.uuidString)"
+    }
+
+    public nonisolated static func chevronAutosaveName(_ id: MenuBarGroup.ID) -> String {
+        "com.zipbar.chevron.\(id.uuidString)"
+    }
+
+    /// Our items in the order they must appear, left to right. The separator
+    /// leads because it is the one that displaces things; everything of ours
+    /// that follows it is therefore safe from its inflation.
+    public nonisolated static func autosaveNames(for layout: MenuBarLayout) -> [String] {
+        layout.groups.flatMap { [separatorAutosaveName($0.id), chevronAutosaveName($0.id)] }
+    }
+
     private func install(_ group: MenuBarGroup) {
         let separator = NSStatusBar.system.statusItem(withLength: SpacerGeometry.expandedLength)
-        // Stable autosave names let macOS remember where the user dragged
-        // each separator across launches.
-        separator.autosaveName = "com.zipbar.separator.\(group.id.uuidString)"
+        separator.autosaveName = Self.separatorAutosaveName(group.id)
         StatusItemGlyph.apply(
             to: separator.button,
             symbolName: Self.separatorSymbol,
@@ -185,7 +201,7 @@ public final class SpacerStrategy: HidingStrategy {
         separator.button?.toolTip = "\(group.name) 구분자 — 숨길 아이콘을 이 왼쪽에 ⌘드래그하세요"
 
         let chevron = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        chevron.autosaveName = "com.zipbar.chevron.\(group.id.uuidString)"
+        chevron.autosaveName = Self.chevronAutosaveName(group.id)
         chevron.button?.target = self
         chevron.button?.action = #selector(chevronClicked(_:))
         chevron.button?.identifier = NSUserInterfaceItemIdentifier(group.id.uuidString)
