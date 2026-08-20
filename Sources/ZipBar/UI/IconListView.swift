@@ -61,6 +61,13 @@ struct IconListView: View {
 
     // MARK: - Permission
 
+    /// Re-checks the grant while this gate is on screen.
+    ///
+    /// The user flips the toggle in System Settings, not here, so the moment
+    /// of success is invisible to us — polling is the only way the gate can
+    /// dismiss itself instead of demanding another click.
+    private let grantPoll = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+
     private var permissionGate: some View {
         VStack(spacing: 12) {
             Image(systemName: "lock.shield")
@@ -76,10 +83,25 @@ struct IconListView: View {
                 .frame(maxWidth: 380)
             Button("접근성 권한 요청") { inventory.requestAuthorization() }
                 .buttonStyle(.borderedProminent)
-            Button("이미 허용했다면 다시 확인") { inventory.refresh() }
-                .buttonStyle(.link)
+
+            // A grant given while the app is running does not reach this
+            // process — a relaunch is the fix, so it is offered here rather
+            // than left for the user to discover.
+            VStack(spacing: 4) {
+                Text("이미 허용했는데 이 화면이 남아 있다면, 실행 중이던 앱에는 "
+                     + "권한이 늦게 전달됩니다. 재시작하면 바로 적용됩니다.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 380)
+                Button("ZipBar 재시작") { SelfRelauncher.relaunch() }
+            }
+            .padding(.top, 6)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onReceive(grantPoll) { _ in
+            if !inventory.isAuthorized { inventory.refresh() }
+        }
     }
 
     // MARK: - Content
