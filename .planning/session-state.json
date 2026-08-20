@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "created_at": "2026-08-17T05:38:49.895966+00:00",
-  "updated_at": "2026-08-20T02:08:04.499579+00:00",
+  "updated_at": "2026-08-20T02:23:14.238984+00:00",
   "session": {
     "id": "session_20260817_143849",
     "project_path": "/Users/firstandre/mac-saas-zipbar"
@@ -20,10 +20,10 @@
   },
   "analyzer": {
     "last_decision": {
-      "case": "ideation",
-      "context": "general",
-      "complexity": 0.004,
-      "confidence": 0.06
+      "case": "feature_impl",
+      "context": "development",
+      "complexity": 0.043,
+      "confidence": 0.3
     }
   },
   "orchestration": {
@@ -39,10 +39,10 @@
   "project_org": {
     "status": "draft",
     "current": {
-      "org_id": "org-89be612b",
-      "request_summary": "맥북 상단의 바를 보면 아이콘들이 너무 많아서 표기가 안되는 경우가 있어\n그래서 이를 그루핑하거나 하나로 다 묶게 하고 싶고 상단바에 보이지 않던 아이콘들을 다 보이게, 그리고 순서조정, 강조, 숨기기 이렇게 할 수 있게 하고 싶어 \n\n그런걸 구현해주는 서비스 앱을 만들고 싶은데 계획짜",
+      "org_id": "org-ac4d1c84",
+      "request_summary": "슬라임 이뻐 \n그리고 바의 슬라임이 살아 움직이는 형태느낌처럼 구현하고 싶은데",
       "domain": "development",
-      "complexity": 0.161,
+      "complexity": 0.043,
       "risk_level": "low",
       "teams": [],
       "global_blue_team": {
@@ -68,10 +68,44 @@
         "status": "pending"
       },
       "status": "draft",
-      "source_case": "project_planning",
+      "source_case": "feature_impl",
       "kickoff_approval_required": true
     },
-    "history": []
+    "history": [
+      {
+        "org_id": "org-89be612b",
+        "request_summary": "맥북 상단의 바를 보면 아이콘들이 너무 많아서 표기가 안되는 경우가 있어\n그래서 이를 그루핑하거나 하나로 다 묶게 하고 싶고 상단바에 보이지 않던 아이콘들을 다 보이게, 그리고 순서조정, 강조, 숨기기 이렇게 할 수 있게 하고 싶어 \n\n그런걸 구현해주는 서비스 앱을 만들고 싶은데 계획짜",
+        "domain": "development",
+        "complexity": 0.161,
+        "risk_level": "low",
+        "teams": [],
+        "global_blue_team": {
+          "roles": [
+            "Global Blue Board"
+          ],
+          "focus": [
+            "팀 간 정렬",
+            "승인 누락",
+            "검증 완전성"
+          ],
+          "status": "pending"
+        },
+        "global_red_team": {
+          "roles": [
+            "Global Red Board"
+          ],
+          "focus": [
+            "승인 우회",
+            "일정 낙관",
+            "통합 실패 시나리오"
+          ],
+          "status": "pending"
+        },
+        "status": "draft",
+        "source_case": "project_planning",
+        "kickoff_approval_required": true
+      }
+    ]
   },
   "plan_mode": {
     "active": false,

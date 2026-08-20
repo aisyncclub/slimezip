@@ -10,6 +10,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var controlItem: NSStatusItem?
     private var settingsWindow: NSWindow?
     private var inventoryTimer: Timer?
+    private let animator = SlimeAnimator()
+    /// Current deformation, driven by the animator between redraws.
+    private var slimeSquash: CGFloat = 0
 
     /// Autosave name for the app's own control item.
     static let controlAutosaveName = "com.zipbar.control"
@@ -139,6 +142,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Renders the motion curves to a filmstrip so the animation can be
+        // inspected without watching the menu bar in real time.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_ANIM"] == "1" {
+            let out = ProcessInfo.processInfo.environment["ZIPBAR_ANIM_OUT"] ?? "/tmp/slime-anim.png"
+            emitFilmstrip(to: out)
+            NSApp.terminate(nil)
+            return
+        }
+
         // First run: explain the ⌘-drag step, because with the spacer backend
         // nothing appears to happen until the user arranges their icons.
         if !UserDefaults.standard.bool(forKey: Self.onboardingShownKey) {
@@ -209,6 +221,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         out.append(abs(delta) > 4 ? "✅ 합성 드래그로 이동 가능" : "❌ 이동하지 않음")
     }
 
+    private func emitFilmstrip(to path: String) {
+        let motions: [(String, SlimeAnimator.Motion)] =
+            [("breathe", .breathe), ("jiggle", .jiggle), ("twitch", .twitch)]
+        let frames = 14
+        let scale: CGFloat = 4          // menu bar glyphs are too small to judge
+
+        guard let probe = SlimeRenderer.image(hiddenCount: 4, hasActivity: false, squash: 0) else {
+            FileHandle.standardError.write(Data("아트워크 없음\n".utf8)); return
+        }
+        let cell = NSSize(width: probe.size.width * scale, height: probe.size.height * scale)
+        let sheet = NSImage(size: NSSize(
+            width: cell.width * CGFloat(frames),
+            height: cell.height * CGFloat(motions.count)))
+
+        sheet.lockFocusFlipped(false)
+        NSColor(calibratedWhite: 0.12, alpha: 1).setFill()
+        NSRect(origin: .zero, size: sheet.size).fill()
+        for (row, entry) in motions.enumerated() {
+            for frame in 0..<frames {
+                let t = Double(frame) / Double(frames - 1)
+                guard let image = SlimeRenderer.image(
+                    hiddenCount: 4, hasActivity: false, squash: entry.1.squash(at: t)) else { continue }
+                image.draw(in: NSRect(
+                    x: CGFloat(frame) * cell.width,
+                    // Bottom row first in flipped-false space; reverse so the
+                    // strip reads top-to-bottom in the order listed.
+                    y: CGFloat(motions.count - 1 - row) * cell.height,
+                    width: cell.width, height: cell.height))
+            }
+        }
+        sheet.unlockFocus()
+
+        guard let tiff = sheet.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:])
+        else { FileHandle.standardError.write(Data("렌더 실패\n".utf8)); return }
+        try? png.write(to: URL(fileURLWithPath: path))
+        FileHandle.standardError.write(Data(
+            "저장: \(path)  (위→아래: \(motions.map(\.0).joined(separator: ", ")))\n".utf8))
+    }
+
     /// Report what actually reached the menu bar.
     private func emitDiagnostics() {
         var lines = [
@@ -245,6 +298,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        animator.stop()
         inventoryTimer?.invalidate()
         engine.stop()
     }

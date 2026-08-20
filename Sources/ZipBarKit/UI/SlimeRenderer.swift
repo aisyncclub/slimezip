@@ -32,12 +32,66 @@ public enum SlimeRenderer {
         return 1 + max(1, Int((position * span).rounded()))
     }
 
+    /// Limits on the deformation, as fractions of the resting size.
+    ///
+    /// Asymmetric on purpose. Jelly flattens further than it draws itself
+    /// out, and the canvas has to contain both: a drawing taller than its
+    /// canvas gets its dome clipped flat, which is the opposite of stretching.
+    /// The canvas is padded by `maxSquash` in both directions so the status
+    /// item never resizes mid-motion and shoves its neighbours sideways.
+    public static let maxSquash: CGFloat = 0.12
+    public static let maxStretch: CGFloat = 0.06
+
     /// The glyph for a given state, or nil when the artwork is missing —
     /// callers fall back to a symbol rather than showing an empty item.
-    public static func image(hiddenCount: Int, hasActivity: Bool) -> NSImage? {
+    ///
+    /// - Parameter squash: normalised −1 through 1. Positive squashes the
+    ///   slime wide and flat, negative draws it tall and thin; the two are
+    ///   scaled by `maxSquash` and `maxStretch` respectively. Volume is held
+    ///   roughly constant so it deforms like jelly rather than merely scaling.
+    public static func image(
+        hiddenCount: Int, hasActivity: Bool, squash: CGFloat = 0
+    ) -> NSImage? {
         guard let base = stageImage(stage(forHiddenCount: hiddenCount)) else { return nil }
-        guard hasActivity else { return base }
-        return badged(base)
+        // Always the padded canvas, including at rest. Returning the bare
+        // artwork when still and a wider one while animating would make the
+        // status item jump wider the instant a motion began, shoving its
+        // neighbours sideways — the jitter the padding exists to prevent.
+        let body = deformed(base, squash: squash)
+        return hasActivity ? badged(body) : body
+    }
+
+    /// Applies squash and stretch inside a fixed canvas.
+    static func deformed(_ base: NSImage, squash: CGFloat) -> NSImage {
+        let normalised = max(-1, min(1, squash))
+        let amount = normalised >= 0 ? normalised * maxSquash : normalised * maxStretch
+
+        let canvas = NSSize(
+            width: base.size.width * (1 + maxSquash),
+            height: base.size.height * (1 + maxSquash)
+        )
+        let drawn = NSSize(
+            width: base.size.width * (1 + amount),
+            height: base.size.height * (1 - amount)
+        )
+        // Sits just off the canvas floor: enough headroom that a full stretch
+        // still fits, low enough that squashing reads as pressing down on a
+        // surface rather than shrinking in mid-air. With the padding above and
+        // below matched, the resting slime lands centred in the bar.
+        let floor = base.size.height * maxStretch
+
+        let result = NSImage(size: canvas)
+        result.lockFocusFlipped(false)
+        NSGraphicsContext.current?.imageInterpolation = .high
+        base.draw(in: NSRect(
+            x: (canvas.width - drawn.width) / 2,
+            y: floor,
+            width: drawn.width,
+            height: drawn.height
+        ))
+        result.unlockFocus()
+        result.isTemplate = false
+        return result
     }
 
     /// How many stages have artwork on disk.
