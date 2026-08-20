@@ -30,17 +30,34 @@ cp "$BIN_DIR/zipbar-probe" "$APP/Contents/MacOS/zipbar-probe"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
-# Ad-hoc signature. Enough for local runs; the Accessibility grant is tied to
-# the signature, so an unsigned binary would re-prompt on every rebuild.
-# Phase 5 replaces this with a Developer ID identity plus notarization.
 cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 cp -R "$ROOT/Resources/Slime" "$APP/Contents/Resources/Slime"
 
-echo "==> codesign (ad-hoc)"
-codesign --force --sign - \
-  --entitlements "$ROOT/Resources/ZipBar.entitlements" \
-  --options runtime \
-  "$APP" 2>&1 | sed 's/^/    /'
+# Sign with the stable "ZipBar Dev" identity when the keychain has it.
+#
+# TCC ties an Accessibility grant to the signature's designated requirement.
+# An ad-hoc signature has a new fingerprint every build, so each rebuild
+# turned the existing grant into a dead entry: System Settings still showed
+# the toggle on while AXIsProcessTrusted() read false. (This was measured
+# wrongly once — running the binary from a shell attributes the check to the
+# terminal host, which masked the breakage.) A certificate keeps the
+# designated requirement stable, so one grant survives every rebuild.
+# Ad-hoc remains the fallback so the build still works on a machine without
+# the identity; distribution later needs Developer ID plus notarization.
+IDENTITY="ZipBar Dev"
+if security find-identity -v -p codesigning 2>/dev/null | grep -q "$IDENTITY"; then
+  echo "==> codesign ($IDENTITY)"
+  codesign --force --sign "$IDENTITY" \
+    --entitlements "$ROOT/Resources/ZipBar.entitlements" \
+    --options runtime \
+    "$APP" 2>&1 | sed 's/^/    /'
+else
+  echo "==> codesign (ad-hoc — '$IDENTITY' 인증서 없음, 권한이 리빌드마다 풀립니다)"
+  codesign --force --sign - \
+    --entitlements "$ROOT/Resources/ZipBar.entitlements" \
+    --options runtime \
+    "$APP" 2>&1 | sed 's/^/    /'
+fi
 
 echo
 echo "빌드 완료: $APP"
