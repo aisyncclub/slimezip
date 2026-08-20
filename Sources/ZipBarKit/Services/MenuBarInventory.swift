@@ -204,6 +204,16 @@ public final class MenuBarInventory: ObservableObject {
 
     public func refresh() {
         isAuthorized = AXIsProcessTrusted()
+
+        // Beacon for diagnosing permission problems from outside the app.
+        //
+        // A shell-run diagnostic answers for the *terminal host*, not for
+        // ZipBar — TCC attributes the check to the responsible process, which
+        // is how a contaminated measurement once claimed rebuilds were safe.
+        // The only trustworthy report of what the GUI app sees is one the GUI
+        // app writes itself.
+        UserDefaults.standard.set(isAuthorized, forKey: "com.zipbar.beacon.axTrusted")
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "com.zipbar.beacon.at")
         let result = sweep.probe()
         notes = result.notes
         lastRefreshFailed = isAuthorized && result.items.isEmpty

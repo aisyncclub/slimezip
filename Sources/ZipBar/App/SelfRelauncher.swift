@@ -22,3 +22,8 @@ enum SelfRelauncher {
         NSApp.terminate(nil)
     }
 }
+
+/// Build marker: real code (not a comment) so that touching it changes the
+/// compiled binary — a comment-only edit compiles byte-identically and can't
+/// exercise a rebuild.
+enum BuildMarker { static let revision = 2 }
