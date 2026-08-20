@@ -27,6 +27,14 @@ public struct MenuBarGroup: Identifiable, Codable, Hashable, Sendable {
     public var symbolName: String
     public var behavior: Behavior
     /// Collapse again once the pointer leaves the menu bar.
+    ///
+    /// Off by default. With it on, the group shut itself a few seconds after
+    /// launch and swallowed whatever happened to sit left of the slime — on
+    /// this machine that was LM Studio and both Claude icons, none of which
+    /// the user had chosen to hide. Hiding icons the user never picked is
+    /// worse than leaving the bar untidy, so the first collapse is theirs to
+    /// make; auto-hide is worth turning on only once the group holds what
+    /// they want it to hold.
     public var autoHide: Bool
     /// Grace period before auto-hide fires.
     public var autoHideDelay: TimeInterval
@@ -48,7 +56,7 @@ public struct MenuBarGroup: Identifiable, Codable, Hashable, Sendable {
         name: String,
         symbolName: String = "chevron.left",
         behavior: Behavior = .collapsible,
-        autoHide: Bool = true,
+        autoHide: Bool = false,
         autoHideDelay: TimeInterval = 3
     ) {
         self.id = id
