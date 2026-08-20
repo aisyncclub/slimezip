@@ -26,6 +26,27 @@ public final class MenuBarInventory: ObservableObject {
         public let presence: Presence
         /// One of ZipBar's own items, which the user should not be told to move.
         public let isOurs: Bool
+        /// Stable across launches, unlike `id`, which embeds a process id.
+        public let preferenceKey: String
+    }
+
+    /// An icon sitting somewhere the user did not ask it to be.
+    ///
+    /// The app cannot fix these itself, so each one carries the gesture that
+    /// would: naming the two or three icons that are out of place is the
+    /// useful half of a job macOS reserves for the user's own hands.
+    public struct Misplaced: Identifiable, Sendable {
+        public var id: String { item.preferenceKey }
+        public let item: Item
+        public let desired: IconPreferenceStore.Desired
+
+        /// What the user has to do about it.
+        public var instruction: String {
+            switch desired {
+            case .hidden: return "슬라임 왼쪽으로 ⌘드래그"
+            case .visible: return "슬라임 오른쪽으로 ⌘드래그"
+            }
+        }
     }
 
     @Published public private(set) var items: [Item] = []
@@ -45,9 +66,39 @@ public final class MenuBarInventory: ObservableObject {
     private var signatures: [String: String] = [:]
 
     private let sweep: AXSweepProbe
+    private let preferences: IconPreferenceStore
 
-    public init(sweep: AXSweepProbe = AXSweepProbe()) {
+    public init(
+        sweep: AXSweepProbe = AXSweepProbe(),
+        preferences: IconPreferenceStore = IconPreferenceStore()
+    ) {
         self.sweep = sweep
+        self.preferences = preferences
+    }
+
+    // MARK: - Preferences
+
+    public func desired(for item: Item) -> IconPreferenceStore.Desired? {
+        preferences.desired(for: item.preferenceKey)
+    }
+
+    public func setDesired(_ desired: IconPreferenceStore.Desired?, for item: Item) {
+        preferences.set(desired, for: item.preferenceKey)
+        objectWillChange.send()
+    }
+
+    /// Icons whose current side of the boundary disagrees with the user's
+    /// stated preference. Icons with no preference are never listed — silence
+    /// is not a request.
+    public var misplaced: [Misplaced] {
+        items.compactMap { item in
+            guard !item.isOurs, item.presence != .notDrawn,
+                  let want = preferences.desired(for: item.preferenceKey)
+            else { return nil }
+            let isWhereItShouldBe = (want == .hidden && item.presence == .hidden)
+                || (want == .visible && item.presence == .visible)
+            return isWhereItShouldBe ? nil : Misplaced(item: item, desired: want)
+        }
     }
 
     public var hidden: [Item] { items.filter { $0.presence == .hidden && !$0.isOurs } }
@@ -81,6 +132,12 @@ public final class MenuBarInventory: ObservableObject {
             }
             signatures[snapshot.id] = signature
 
+            let key = IconPreferenceStore.key(
+                bundleIdentifier: snapshot.bundleIdentifier,
+                ownerName: snapshot.ownerName ?? "?",
+                indexInApp: indexInApp
+            )
+
             return Item(
                 id: snapshot.id,
                 ownerName: snapshot.ownerName ?? "알 수 없는 앱",
@@ -90,7 +147,8 @@ public final class MenuBarInventory: ObservableObject {
                 processIdentifier: pid,
                 indexInApp: indexInApp,
                 presence: Self.classify(snapshot.frame, bands: bands),
-                isOurs: snapshot.bundleIdentifier == Bundle.main.bundleIdentifier
+                isOurs: snapshot.bundleIdentifier == Bundle.main.bundleIdentifier,
+                preferenceKey: key
             )
         }
 

@@ -100,6 +100,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             var out = ["authorized=\(inventory.isAuthorized)",
                        "숨겨진 \(inventory.hidden.count)개 / 보이는 \(inventory.visible.count)개"]
             out.append("미표시 \(inventory.notDrawn.count)개는 목록에서 제외")
+            out.append("-- 옮겨야 할 것 \(inventory.misplaced.count)개 --")
+            for m in inventory.misplaced {
+                out.append("  \(m.item.ownerName): \(m.instruction)  [key=\(m.item.preferenceKey)]")
+            }
+            out.append("-- 키 예시 --")
+            for i in inventory.items.filter({ !$0.isOurs }).prefix(4) {
+                out.append("  \(i.ownerName) → \(i.preferenceKey)")
+            }
             out.append("-- 숨겨짐 --")
             for i in inventory.hidden { out.append("  \(i.ownerName) [\(i.title ?? "-")]") }
             out.append("-- 보임 --")
