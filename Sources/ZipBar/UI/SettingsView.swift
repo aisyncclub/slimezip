@@ -2,6 +2,7 @@ import SwiftUI
 import ZipBarKit
 
 enum SettingsTab: Hashable {
+    case icons
     case groups
     case onboarding
     case diagnostics
@@ -9,9 +10,10 @@ enum SettingsTab: Hashable {
 
 struct SettingsView: View {
     @ObservedObject var engine: MenuBarEngine
+    @StateObject private var inventory = MenuBarInventory()
     @State private var tab: SettingsTab
 
-    init(engine: MenuBarEngine, initialTab: SettingsTab = .groups) {
+    init(engine: MenuBarEngine, initialTab: SettingsTab = .icons) {
         self.engine = engine
         _tab = State(initialValue: initialTab)
     }
@@ -21,6 +23,10 @@ struct SettingsView: View {
             CapabilityBanner(capabilities: engine.capabilities)
 
             TabView(selection: $tab) {
+                IconListView(inventory: inventory)
+                    .tabItem { Label("아이콘", systemImage: "menubar.rectangle") }
+                    .tag(SettingsTab.icons)
+
                 GroupListView(engine: engine)
                     .tabItem { Label("그룹", systemImage: "square.stack.3d.up") }
                     .tag(SettingsTab.groups)

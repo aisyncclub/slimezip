@@ -74,6 +74,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             engine.collapseAll()
         }
 
+        // Whether other apps' icons can be moved decides what the settings
+        // UI may offer, so it is measured rather than assumed.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_MOVE"] == "1" {
+            let (findings, notes) = AXMovementProbe().probe()
+            var out = notes
+            for f in findings.prefix(40) {
+                let pos = f.settable[kAXPositionAttribute] == true ? "쓰기가능" : "읽기전용"
+                out.append("  \(pos)  \(f.ownerName) [\(f.title ?? "-")] actions=\(f.actions.joined(separator: ","))")
+            }
+            FileHandle.standardError.write(Data((out.joined(separator: "\n") + "\n").utf8))
+            NSApp.terminate(nil)
+            return
+        }
+
+        // What the icon list will show, without opening the window.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_INVENTORY"] == "1" {
+            let inventory = MenuBarInventory()
+            inventory.refresh()
+            var out = ["authorized=\(inventory.isAuthorized)",
+                       "숨겨진 \(inventory.hidden.count)개 / 보이는 \(inventory.visible.count)개"]
+            out.append("미표시 \(inventory.notDrawn.count)개는 목록에서 제외")
+            out.append("-- 숨겨짐 --")
+            for i in inventory.hidden { out.append("  \(i.ownerName) [\(i.title ?? "-")]") }
+            out.append("-- 보임 --")
+            for i in inventory.visible { out.append("  \(i.ownerName) [\(i.title ?? "-")]") }
+            FileHandle.standardError.write(Data((out.joined(separator: "\n") + "\n").utf8))
+            NSApp.terminate(nil)
+            return
+        }
+
         // First run: explain the ⌘-drag step, because with the spacer backend
         // nothing appears to happen until the user arranges their icons.
         if !UserDefaults.standard.bool(forKey: Self.onboardingShownKey) {
@@ -199,7 +229,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func expandAll() { engine.expandAll() }
     @objc private func collapseAll() { engine.collapseAll() }
     @objc private func quit() { NSApp.terminate(nil) }
-    @objc private func openSettings() { showSettings(selecting: .groups) }
+    @objc private func openSettings() { showSettings(selecting: .icons) }
 
     private func showSettings(selecting tab: SettingsTab) {
         if let settingsWindow {
