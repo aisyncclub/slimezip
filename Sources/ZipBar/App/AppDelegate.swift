@@ -104,6 +104,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Can the app perform the ⌘-drag itself? Tested only against our
+        // own separator: a failed experiment on someone else's icon would
+        // scatter the user's bar, and ours we can put back.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_DRAG"] == "1" {
+            // Status items are not placed at the instant the app launches, so
+            // let the run loop settle before reading positions.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.runDragProbe() }
+            return
+        }
+
         // First run: explain the ⌘-drag step, because with the spacer backend
         // nothing appears to happen until the user arranges their icons.
         if !UserDefaults.standard.bool(forKey: Self.onboardingShownKey) {
@@ -128,6 +138,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Surfaced through the diagnostic report so a repair is observable.
     private var placementReport: String?
+
+    /// Measures whether a synthesised ⌘-drag moves a status item.
+    private func runDragProbe() {
+        let inventory = MenuBarInventory()
+        inventory.refresh()
+
+        func separator() -> MenuBarInventory.Item? {
+            inventory.items.first { $0.isOurs && ($0.title ?? "").contains("구분자") }
+        }
+
+        var out: [String] = []
+        defer {
+            FileHandle.standardError.write(Data((out.joined(separator: "\n") + "\n").utf8))
+            NSApp.terminate(nil)
+        }
+
+        guard let before = separator(), let frame = before.frame else {
+            out.append("구분자를 찾지 못했습니다 — 측정 불가")
+            out.append("우리 아이템: " + inventory.items.filter(\.isOurs)
+                .map { "\($0.title ?? "-")@\($0.frame.map { "\(Int($0.minX))" } ?? "?")" }
+                .joined(separator: ", "))
+            return
+        }
+
+        let start = CGPoint(x: frame.midX, y: frame.midY)
+        let target = CGPoint(x: frame.midX - 120, y: frame.midY)
+        out.append("드래그 전: x=\(Int(frame.minX)) y=\(Int(frame.minY))")
+        out.append("합성: (\(Int(start.x)),\(Int(start.y))) → (\(Int(target.x)),\(Int(target.y)))")
+
+        let posted = DragSynthesizer.commandDrag(from: start, to: target)
+        out.append("이벤트 전송=\(posted)")
+
+        // The bar reflows asynchronously; re-read after it settles.
+        let deadline = Date().addingTimeInterval(1.5)
+        while Date() < deadline { RunLoop.current.run(until: Date().addingTimeInterval(0.1)) }
+
+        inventory.refresh()
+        guard let after = separator(), let moved = after.frame else {
+            out.append("드래그 후 구분자를 찾지 못했습니다")
+            return
+        }
+        let delta = Int(moved.minX - frame.minX)
+        out.append("드래그 후: x=\(Int(moved.minX))  (변화 \(delta)pt)")
+        out.append(abs(delta) > 4 ? "✅ 합성 드래그로 이동 가능" : "❌ 이동하지 않음")
+    }
 
     /// Report what actually reached the menu bar.
     private func emitDiagnostics() {
