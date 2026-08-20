@@ -289,6 +289,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The slime is the app's only icon; if its artwork is missing the
         // user sees nothing, so the diagnostic says whether it loaded.
         lines.append("slimeArtwork=\(SlimeRenderer.availableStageCount)/\(SlimeRenderer.stageCount)")
+        // What the button is actually showing, which is the only thing the
+        // user sees. Artwork existing on disk does not prove it was applied.
+        if let button = controlItem?.button {
+            let size = button.image.map { "\(Int($0.size.width))x\(Int($0.size.height))" } ?? "nil"
+            lines.append("buttonImage=\(size) title='\(button.title)' template=\(button.image?.isTemplate ?? false)")
+        }
+        lines.append("hiddenCountAtInstall=\(inventory.hidden.count)")
 
         // Whether we can see other apps' icons at all decides what the app
         // can offer: without identity there is no list to show and nothing to
@@ -319,15 +326,105 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// collapses everything, quits.
     private func installControlItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.autosaveName = "com.zipbar.control"
-        StatusItemGlyph.apply(
-            to: item.button,
-            symbolName: "rectangle.compress.vertical",
-            fallbackText: "ZB",
-            accessibilityDescription: "ZipBar"
-        )
-        item.menu = buildMenu()
+        item.autosaveName = Self.controlAutosaveName
+
+        // The slime is ZipBar's only icon, so one button carries both jobs:
+        // a left click opens and shuts the group, a right click reaches the
+        // menu. Assigning `item.menu` would make the left click open the menu
+        // too and cost the app its one-click toggle.
+        item.button?.target = self
+        item.button?.action = #selector(slimeClicked)
+        item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         controlItem = item
+
+        animator.onFrame = { [weak self] squash in
+            guard let self else { return }
+            self.slimeSquash = squash
+            self.refreshSlime()
+        }
+        animator.startIdling()
+        refreshSlime()
+
+        // The slime's shape is a reading of the bar, which changes without
+        // us: the user can ⌘-drag an icon across the boundary at any time.
+        inventoryTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshInventory() }
+        }
+        refreshInventory()
+    }
+
+    private func refreshInventory() {
+        let hadActivity = inventory.hasActivity
+        inventory.refresh()
+        // A hidden icon changed while the user was not looking: the slime
+        // notices before the dot appears, which is what makes the dot feel
+        // like the creature reacting rather than a badge being stamped on.
+        if inventory.hasActivity && !hadActivity {
+            animator.play(.twitch)
+        }
+        refreshSlime()
+    }
+
+    /// Redraws the slime for the current load, falling back to a symbol if the
+    /// artwork is ever missing — an empty status item is indistinguishable
+    /// from the app having failed to launch.
+    private func refreshSlime() {
+        guard let button = controlItem?.button else { return }
+        let hidden = inventory.hidden.count
+
+        if let image = SlimeRenderer.image(
+            hiddenCount: hidden,
+            hasActivity: inventory.hasActivity,
+            squash: slimeSquash
+        ) {
+            button.image = image
+            button.title = ""
+        } else {
+            StatusItemGlyph.apply(
+                to: button, symbolName: "rectangle.compress.vertical",
+                fallbackText: "ZB", accessibilityDescription: "ZipBar")
+        }
+
+        let collapsed = engine.layout.groups.contains { engine.collapseState[$0.id] == true }
+        button.toolTip = hidden == 0
+            ? "ZipBar — 숨겨진 아이콘 없음"
+            : "ZipBar — \(hidden)개 숨김\(inventory.hasActivity ? " · 변화 있음" : "")"
+        button.setAccessibilityLabel("ZipBar, \(hidden)개 숨김, \(collapsed ? "접힘" : "펼침")")
+    }
+
+    @objc private func slimeClicked() {
+        guard let event = NSApp.currentEvent else { return }
+        let wantsMenu = event.type == .rightMouseUp || event.modifierFlags.contains(.control)
+        if wantsMenu {
+            showControlMenu()
+        } else {
+            toggleAll()
+        }
+    }
+
+    /// Attaches the menu only for the duration of the click, so the left
+    /// click keeps its own meaning.
+    private func showControlMenu() {
+        guard let item = controlItem else { return }
+        item.menu = buildMenu()
+        item.button?.performClick(nil)
+        item.menu = nil
+    }
+
+    private func toggleAll() {
+        let anyCollapsed = engine.layout.groups.contains { engine.collapseState[$0.id] == true }
+        if anyCollapsed {
+            engine.expandAll()
+            // The user is looking at the icons now, so whatever changed while
+            // they were hidden has been seen.
+            inventory.clearActivity()
+        } else {
+            engine.collapseAll()
+        }
+        // Swallowing or letting go of icons is the one moment the slime
+        // visibly changes size, so it gets the biggest reaction.
+        animator.play(.jiggle)
+        refreshInventory()
     }
 
     private func buildMenu() -> NSMenu {
