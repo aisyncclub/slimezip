@@ -23,7 +23,7 @@ struct SettingsView: View {
             CapabilityBanner(capabilities: engine.capabilities)
 
             TabView(selection: $tab) {
-                IconListView(inventory: inventory)
+                IconListView(inventory: inventory, engine: engine)
                     .tabItem { Label("아이콘", systemImage: "menubar.rectangle") }
                     .tag(SettingsTab.icons)
 

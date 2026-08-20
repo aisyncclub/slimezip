@@ -159,6 +159,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // End-to-end check of the move path against a real third-party app,
+        // exercising the same code the buttons run. ZIPBAR_PROBE_MOVE_APPLY
+        // names the bundle id; the write is applied, verified, then reverted
+        // so the probe leaves no trace.
+        if let bundle = ProcessInfo.processInfo.environment["ZIPBAR_PROBE_MOVE_APPLY"] {
+            var out: [String] = []
+            let arranger = MenuBarArranger()
+            let boundary = engine.boundaryPosition() ?? -1
+            out.append("boundary=\(boundary)")
+            if let plan = arranger.plan(
+                bundleIdentifier: bundle, ownerName: bundle, indexInApp: 0,
+                side: .hidden, boundaryPosition: boundary) {
+                out.append("plan: key=\(plan.key) current=\(plan.currentPosition.map { "\($0)" } ?? "nil") target=\(plan.targetPosition)")
+                if case .some(let prev) = arranger.apply(plan) {
+                    let now = arranger.storedPosition(for: bundle, key: plan.key)
+                    out.append("applied: now=\(now.map { "\($0)" } ?? "nil") previous=\(prev.map { "\($0)" } ?? "nil")")
+                    arranger.revert(plan, to: prev)
+                    let back = arranger.storedPosition(for: bundle, key: plan.key)
+                    out.append("reverted: now=\(back.map { "\($0)" } ?? "nil")")
+                } else {
+                    out.append("적용 실패")
+                }
+            } else {
+                out.append("계획 실패")
+            }
+            FileHandle.standardError.write(Data((out.joined(separator: "\n") + "\n").utf8))
+            NSApp.terminate(nil)
+            return
+        }
+
         // First run: explain the ⌘-drag step, because with the spacer backend
         // nothing appears to happen until the user arranges their icons.
         if !UserDefaults.standard.bool(forKey: Self.onboardingShownKey) {

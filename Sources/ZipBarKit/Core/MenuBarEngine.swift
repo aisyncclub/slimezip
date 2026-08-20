@@ -56,6 +56,19 @@ public final class MenuBarEngine: ObservableObject {
         )
     }
 
+    /// Where the boundary sits, as a distance from the right edge of the
+    /// screen — the same units macOS stores every status item's position in.
+    ///
+    /// Read from our own saved position rather than measured from the live
+    /// item, because that is the number another app's stored position has to
+    /// be compared against for "left of the boundary" to mean anything.
+    public func boundaryPosition() -> Double? {
+        guard let group = layout.groups.first else { return nil }
+        let key = StatusItemPlacement.key(
+            for: SpacerStrategy.separatorAutosaveName(group.id))
+        return UserDefaults.standard.object(forKey: key) as? Double
+    }
+
     /// Reveals the drag boundary while the user is arranging icons.
     public func setBoundaryVisible(_ visible: Bool) {
         strategy?.setBoundaryVisible(visible)

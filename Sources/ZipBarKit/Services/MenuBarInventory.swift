@@ -67,13 +67,76 @@ public final class MenuBarInventory: ObservableObject {
 
     private let sweep: AXSweepProbe
     private let preferences: IconPreferenceStore
+    private let arranger: MenuBarArranger
+    private let restarter: AppRestarter
 
     public init(
         sweep: AXSweepProbe = AXSweepProbe(),
-        preferences: IconPreferenceStore = IconPreferenceStore()
+        preferences: IconPreferenceStore = IconPreferenceStore(),
+        arranger: MenuBarArranger = MenuBarArranger(),
+        restarter: AppRestarter = AppRestarter()
     ) {
         self.sweep = sweep
         self.preferences = preferences
+        self.arranger = arranger
+        self.restarter = restarter
+    }
+
+    // MARK: - Moving
+
+    /// Whether this icon can be moved for the user.
+    ///
+    /// Needs a bundle identifier to address the app's preferences, and must
+    /// not be one of ours — moving our own boundary or slime through this
+    /// path would fight `StatusItemPlacement`, which already owns their order.
+    public func canMove(_ item: Item) -> Bool {
+        item.bundleIdentifier != nil && !item.isOurs
+    }
+
+    /// Rewrites where macOS remembers this icon, so it lands on the requested
+    /// side the next time its app starts.
+    ///
+    /// - Returns: the plan that was applied, for undo and for telling the user
+    ///   what happened. nil when the icon cannot be addressed.
+    @discardableResult
+    public func move(
+        _ item: Item, to side: MenuBarArranger.Side, boundaryPosition: Double
+    ) -> (plan: MenuBarArranger.Plan, previous: Double?)? {
+        guard canMove(item),
+              let plan = arranger.plan(
+                bundleIdentifier: item.bundleIdentifier,
+                ownerName: item.ownerName,
+                indexInApp: item.indexInApp,
+                side: side,
+                boundaryPosition: boundaryPosition),
+              case .some(let previous) = arranger.apply(plan)
+        else { return nil }
+
+        // The stated preference follows the move, so the icon does not
+        // immediately show up as misplaced against its own arrangement.
+        setDesired(side == .hidden ? .hidden : .visible, for: item)
+        return (plan, previous)
+    }
+
+    public func undo(_ plan: MenuBarArranger.Plan, previous: Double?) {
+        arranger.revert(plan, to: previous)
+    }
+
+    /// A written position is theoretical until its app restarts.
+    public func needsRestart(_ item: Item) -> Bool {
+        guard let bundle = item.bundleIdentifier else { return false }
+        return restarter.isRunning(bundle)
+    }
+
+    public func restart(_ item: Item, completion: @escaping (AppRestarter.Outcome) -> Void) {
+        guard let bundle = item.bundleIdentifier else {
+            completion(.notRunning)
+            return
+        }
+        restarter.restart(bundle) { [weak self] outcome in
+            if outcome == .restarted { self?.refresh() }
+            completion(outcome)
+        }
     }
 
     // MARK: - Preferences
