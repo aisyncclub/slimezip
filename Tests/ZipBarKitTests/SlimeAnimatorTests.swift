@@ -76,12 +76,23 @@ struct SlimeAnimatorTests {
         #expect(secondHalf < firstHalf, "진폭이 잦아들어야 한다")
     }
 
-    @Test("숨 간격이 기계적으로 일정하지 않다")
-    func breathGapIsARange() {
+    @Test("숨과 깜빡임 간격이 기계적으로 일정하지 않다")
+    func idleGapsAreRanges() {
+        // Both are randomised: a fixed interval reads as a machine ticking
+        // rather than as something alive. The lower bounds are only there to
+        // stop the idle loop turning into continuous animation, which would
+        // cost CPU for the whole session.
         #expect(SlimeAnimator.breathGap.lowerBound < SlimeAnimator.breathGap.upperBound)
-        // Constant motion in the corner of the eye is tiring, and a fixed
-        // interval reads as a machine ticking rather than as breathing.
-        #expect(SlimeAnimator.breathGap.lowerBound >= 3)
+        #expect(SlimeAnimator.breathGap.lowerBound >= 1.5)
+        #expect(SlimeAnimator.blinkGap.lowerBound < SlimeAnimator.blinkGap.upperBound)
+        #expect(SlimeAnimator.blinkGap.lowerBound >= 1.5)
+    }
+
+    @Test("깜빡임은 눈에 띄지 않을 만큼 짧다")
+    func blinkIsBrief() {
+        // Roughly a human blink. Longer and the slime looks asleep.
+        #expect(SlimeAnimator.blinkDuration > 0.05)
+        #expect(SlimeAnimator.blinkDuration < 0.3)
     }
 }
 
@@ -125,7 +136,7 @@ struct SlimeAnimatorDriveTests {
     func deliversFrames() {
         let animator = SlimeAnimator()
         var frames: [CGFloat] = []
-        animator.onFrame = { frames.append($0) }
+        animator.onFrame = { squash, _ in frames.append(squash) }
 
         animator.play(.jiggle)
         pump(for: SlimeAnimator.Motion.jiggle.duration + 0.3)
@@ -140,7 +151,7 @@ struct SlimeAnimatorDriveTests {
     func stopSettlesToRest() {
         let animator = SlimeAnimator()
         var last: CGFloat = 99
-        animator.onFrame = { last = $0 }
+        animator.onFrame = { squash, _ in last = squash }
 
         animator.play(.breathe)
         pump(for: 0.3)
@@ -159,7 +170,7 @@ struct SlimeAnimatorDriveTests {
         pump(for: SlimeAnimator.Motion.twitch.duration + 0.2)
 
         var framesAfterSettling = 0
-        animator.onFrame = { _ in framesAfterSettling += 1 }
+        animator.onFrame = { _, _ in framesAfterSettling += 1 }
         pump(for: 0.5)
 
         #expect(framesAfterSettling == 0, "쉬는 중에 \(framesAfterSettling)프레임이 나갔다")

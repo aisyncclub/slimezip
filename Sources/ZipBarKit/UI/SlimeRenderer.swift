@@ -1,115 +1,141 @@
 import AppKit
 
-/// ZipBar's menu bar character: a slime that fattens as it swallows icons and
-/// slims down when it lets them go.
+/// ZipBar's menu bar glyph: a row of slimes, one per hidden icon.
 ///
-/// The five stages are drawn artwork rather than generated shapes, so the
-/// creature keeps a hand-made look that a path would flatten. They share a
-/// baseline and a scale, which is what makes the sequence read as one slime
-/// changing size rather than five separate drawings.
+/// A count you can read at a glance was the goal, and the shape of the menu
+/// bar decided how to get there. The bar constrains height — about 18pt of
+/// usable glyph — but not width, so a square container filling with slimes
+/// was measured and rejected: five slimes stacked inside 18pt leaves each one
+/// about six pixels, at which point one slime and three are the same smudge
+/// and the eyes are gone. Laid out in a row each slime keeps its full height,
+/// so both the count and the faces survive.
 ///
-/// Images ship at 2× and are stamped with their logical size, so AppKit picks
-/// up the high-resolution data and the glyph stays crisp on a Retina bar.
+/// Width is the price, and it is capped. Past `maxVisibleSlimes` the row
+/// stops growing and the slimes fatten instead: an app whose purpose is to
+/// reclaim menu bar space must not eat it a slime at a time.
 public enum SlimeRenderer {
 
-    /// Number of drawn stages, thinnest through fattest.
+    /// Drawn fullness stages, thinnest through fattest.
     public static let stageCount = 5
 
-    /// Hidden icons at which the slime is completely stuffed. Past this the
-    /// shape would stop reading as a creature.
+    /// Most slimes ever drawn side by side.
+    public static let maxVisibleSlimes = 4
+
+    /// Hidden icons at which the row is considered completely stuffed.
     public static let fullAt = 8
 
-    /// Which stage represents this load.
+    /// Gap between slimes, in points.
+    static let spacing: CGFloat = 1.5
+
+    /// How many slimes to draw for a given load.
     ///
-    /// Zero hidden icons must map to the thinnest stage: an empty slime that
-    /// already looked plump would have nothing left to say when it filled up.
+    /// Zero hidden icons still draws one: an empty bar should show a slime
+    /// waiting to be fed, not an empty space the user cannot click.
+    public static func slimeCount(forHiddenCount count: Int) -> Int {
+        max(1, min(count, maxVisibleSlimes))
+    }
+
+    /// Which fullness stage each slime is drawn at.
+    ///
+    /// Below the cap the slimes stay slim and the *number* carries the count.
+    /// Above it the number is pinned, so fullness takes over as the signal.
     public static func stage(forHiddenCount count: Int) -> Int {
         guard count > 0 else { return 1 }
-        let clamped = min(count, fullAt)
-        // Spread 1...fullAt across stages 2...stageCount.
-        let span = Double(stageCount - 1)
-        let position = Double(clamped) / Double(fullAt)
-        return 1 + max(1, Int((position * span).rounded()))
+        guard count > maxVisibleSlimes else { return 2 }
+        let overflow = Double(count - maxVisibleSlimes)
+        let span = Double(max(1, fullAt - maxVisibleSlimes))
+        let progress = min(1, overflow / span)
+        return 2 + Int((progress * Double(stageCount - 2)).rounded())
     }
 
     /// Limits on the deformation, as fractions of the resting size.
     ///
-    /// Asymmetric on purpose. Jelly flattens further than it draws itself
-    /// out, and the canvas has to contain both: a drawing taller than its
-    /// canvas gets its dome clipped flat, which is the opposite of stretching.
-    /// The canvas is padded by `maxSquash` in both directions so the status
-    /// item never resizes mid-motion and shoves its neighbours sideways.
+    /// Asymmetric on purpose: jelly flattens further than it draws itself out,
+    /// and the canvas has to contain both — a drawing taller than its canvas
+    /// gets its dome clipped flat, which is the opposite of stretching.
     public static let maxSquash: CGFloat = 0.12
     public static let maxStretch: CGFloat = 0.06
 
-    /// The glyph for a given state, or nil when the artwork is missing —
-    /// callers fall back to a symbol rather than showing an empty item.
+    /// The glyph for a state, or nil when the artwork is missing — callers
+    /// fall back to a symbol rather than showing an empty status item.
     ///
-    /// - Parameter squash: normalised −1 through 1. Positive squashes the
-    ///   slime wide and flat, negative draws it tall and thin; the two are
-    ///   scaled by `maxSquash` and `maxStretch` respectively. Volume is held
-    ///   roughly constant so it deforms like jelly rather than merely scaling.
+    /// - Parameters:
+    ///   - squash: normalised −1…1. Positive squashes wide and flat.
+    ///   - blinking: draws the closed-eye artwork.
     public static func image(
-        hiddenCount: Int, hasActivity: Bool, squash: CGFloat = 0
+        hiddenCount: Int,
+        hasActivity: Bool,
+        squash: CGFloat = 0,
+        blinking: Bool = false
     ) -> NSImage? {
-        guard let base = stageImage(stage(forHiddenCount: hiddenCount)) else { return nil }
-        // Always the padded canvas, including at rest. Returning the bare
-        // artwork when still and a wider one while animating would make the
-        // status item jump wider the instant a motion began, shoving its
-        // neighbours sideways — the jitter the padding exists to prevent.
-        let body = deformed(base, squash: squash)
+        let count = slimeCount(forHiddenCount: hiddenCount)
+        guard let base = stageImage(stage(forHiddenCount: hiddenCount), blinking: blinking)
+        else { return nil }
+
+        let body = row(of: base, count: count, squash: squash)
         return hasActivity ? badged(body) : body
     }
 
-    /// Applies squash and stretch inside a fixed canvas.
-    static func deformed(_ base: NSImage, squash: CGFloat) -> NSImage {
+    /// Lays `count` copies out in a row inside one padded canvas.
+    ///
+    /// The canvas is padded whether or not anything is deforming, so the item
+    /// never changes width mid-animation and shoves its neighbours sideways.
+    static func row(of base: NSImage, count: Int, squash: CGFloat) -> NSImage {
         let normalised = max(-1, min(1, squash))
         let amount = normalised >= 0 ? normalised * maxSquash : normalised * maxStretch
 
-        let canvas = NSSize(
+        let cell = NSSize(
             width: base.size.width * (1 + maxSquash),
-            height: base.size.height * (1 + maxSquash)
-        )
+            height: base.size.height * (1 + maxSquash))
+        let canvas = NSSize(
+            width: cell.width * CGFloat(count) + spacing * CGFloat(count - 1),
+            height: cell.height)
+
         let drawn = NSSize(
             width: base.size.width * (1 + amount),
-            height: base.size.height * (1 - amount)
-        )
+            height: base.size.height * (1 - amount))
         // Sits just off the canvas floor: enough headroom that a full stretch
-        // still fits, low enough that squashing reads as pressing down on a
-        // surface rather than shrinking in mid-air. With the padding above and
-        // below matched, the resting slime lands centred in the bar.
+        // still fits, low enough that squashing reads as pressing down.
         let floor = base.size.height * maxStretch
 
         let result = NSImage(size: canvas)
         result.lockFocusFlipped(false)
         NSGraphicsContext.current?.imageInterpolation = .high
-        base.draw(in: NSRect(
-            x: (canvas.width - drawn.width) / 2,
-            y: floor,
-            width: drawn.width,
-            height: drawn.height
-        ))
+        for index in 0..<count {
+            let originX = CGFloat(index) * (cell.width + spacing)
+            base.draw(in: NSRect(
+                x: originX + (cell.width - drawn.width) / 2,
+                y: floor,
+                width: drawn.width,
+                height: drawn.height))
+        }
         result.unlockFocus()
         result.isTemplate = false
         return result
     }
 
-    /// How many stages have artwork on disk.
-    ///
-    /// Surfaced for diagnostics: the slime is the app's only icon, so missing
-    /// artwork means the user sees nothing and needs to be told why rather
-    /// than left guessing whether the app launched.
+    /// How many stages have artwork on disk, for diagnostics: the slimes are
+    /// the app's only icon, so missing artwork means the user sees nothing.
     public static var availableStageCount: Int {
-        (1...stageCount).filter { stageImage($0) != nil }.count
+        (1...stageCount).filter { stageImage($0, blinking: false) != nil }.count
     }
 
-    private static var cache: [Int: NSImage] = [:]
+    /// Whether the closed-eye artwork is present. Without it the app simply
+    /// never blinks rather than falling back to something wrong.
+    public static var hasBlinkArtwork: Bool {
+        stageImage(2, blinking: true) != nil
+    }
 
-    static func stageImage(_ stage: Int) -> NSImage? {
-        if let cached = cache[stage] { return cached }
+    private static var cache: [String: NSImage] = [:]
+
+    /// One drawn slime. Public so the settings window can show the same
+    /// character at a size where its face reads.
+    public static func stageImage(_ stage: Int, blinking: Bool) -> NSImage? {
+        let name = "slime-\(blinking ? "blink-" : "")\(stage)@2x"
+        if let cached = cache[name] { return cached }
         guard let url = Bundle.main.url(
-            forResource: "slime-\(stage)@2x", withExtension: "png", subdirectory: "Slime")
-            ?? Bundle.main.url(forResource: "slime-\(stage)@2x", withExtension: "png"),
+            forResource: name, withExtension: "png", subdirectory: "Slime")
+            ?? Bundle.main.url(forResource: name, withExtension: "png"),
             let image = NSImage(contentsOf: url)
         else { return nil }
 
@@ -120,7 +146,7 @@ public enum SlimeRenderer {
         } ?? image.size
         image.size = NSSize(width: pixels.width / 2, height: pixels.height / 2)
         image.isTemplate = false
-        cache[stage] = image
+        cache[name] = image
         return image
     }
 
@@ -128,8 +154,7 @@ public enum SlimeRenderer {
     ///
     /// macOS publishes no badge or unread state for other apps' status items,
     /// so this marks "something about a hidden icon changed" — the strongest
-    /// claim the data supports. It is drawn here rather than baked into the
-    /// artwork so it can appear on any stage.
+    /// claim the data supports.
     private static func badged(_ base: NSImage) -> NSImage {
         let size = base.size
         let result = NSImage(size: size)
@@ -140,9 +165,7 @@ public enum SlimeRenderer {
         let center = NSPoint(x: size.width - radius - 0.4, y: size.height - radius - 0.4)
         let dot = NSRect(
             x: center.x - radius, y: center.y - radius,
-            width: radius * 2, height: radius * 2
-        )
-        // Ringed so it stays legible over the body it overlaps.
+            width: radius * 2, height: radius * 2)
         NSColor.white.setFill()
         NSBezierPath(ovalIn: dot.insetBy(dx: -1.1, dy: -1.1)).fill()
         NSColor(calibratedRed: 0.98, green: 0.42, blue: 0.18, alpha: 1).setFill()

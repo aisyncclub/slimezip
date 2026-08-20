@@ -35,7 +35,10 @@ struct IconListView: View {
                 permissionGate
             }
         }
-        .onAppear { inventory.refresh() }
+        .onAppear {
+            inventory.boundaries = engine.boundaries()
+            inventory.refresh()
+        }
         .confirmationDialog(
             restartRequest.map { "재시작: \($0.names)" } ?? "",
             isPresented: Binding(
@@ -117,16 +120,23 @@ struct IconListView: View {
             if !waiting.isEmpty { applyBar }
 
             List {
-                section(
-                    "숨겨진 아이콘", systemImage: "eye.slash",
-                    items: inventory.hidden, moveTo: .visible,
-                    empty: "숨겨진 아이콘이 없습니다. 아래 목록에서 숨기기를 누르세요."
-                )
-                section(
-                    "보이는 아이콘", systemImage: "eye",
-                    items: inventory.visible, moveTo: .hidden,
-                    empty: "메뉴바에 보이는 아이콘이 없습니다."
-                )
+                // One section per group, then the icons that stay on screen.
+                // Driven by the live boundaries rather than a fixed pair, so
+                // adding a group in the 그룹 tab shows up here immediately.
+                ForEach(Array(inventory.boundaries.enumerated()), id: \.offset) { index, boundary in
+                    zoneSection(
+                        title: boundary.name,
+                        subtitle: boundary.behavior == .alwaysHidden
+                            ? "슬라임이 계속 물고 있습니다"
+                            : "슬라임을 누르면 여기가 열리고 닫힙니다",
+                        zone: .group(index),
+                        empty: "여기는 아직 비어 있습니다. 아래에서 넣어보세요.")
+                }
+                zoneSection(
+                    title: "밖에 나와 있는 것",
+                    subtitle: "언제나 메뉴바에 보입니다",
+                    zone: .visible,
+                    empty: "메뉴바에 보이는 아이콘이 없습니다.")
             }
             Divider()
             footer
@@ -157,26 +167,34 @@ struct IconListView: View {
     }
 
     @ViewBuilder
-    private func section(
-        _ title: String, systemImage: String,
-        items: [MenuBarInventory.Item], moveTo side: MenuBarArranger.Side,
-        empty: String
+    private func zoneSection(
+        title: String, subtitle: String, zone: MenuBarZone, empty: String
     ) -> some View {
+        let entries = inventory.items(in: zone)
         Section {
-            if items.isEmpty {
+            if entries.isEmpty {
                 Text(empty)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                ForEach(items) { item in row(item, moveTo: side) }
+                ForEach(entries) { item in zoneRow(item, currentZone: zone) }
             }
         } header: {
-            Label("\(title) (\(items.count))", systemImage: systemImage)
+            ZoneHeader(title: title, subtitle: subtitle, count: entries.count)
         }
     }
 
-    private func row(_ item: MenuBarInventory.Item, moveTo side: MenuBarArranger.Side) -> some View {
+    /// Destinations other than where the icon already is.
+    private func destinations(besides current: MenuBarZone) -> [(MenuBarZone, String)] {
+        var out: [(MenuBarZone, String)] = inventory.boundaries.enumerated().map {
+            (.group($0.offset), $0.element.name)
+        }
+        out.append((.visible, "밖으로 꺼내기"))
+        return out.filter { $0.0 != current }
+    }
+
+    private func zoneRow(_ item: MenuBarInventory.Item, currentZone: MenuBarZone) -> some View {
         HStack(spacing: 10) {
             appIcon(for: item).frame(width: 20, height: 20)
 
@@ -201,8 +219,6 @@ struct IconListView: View {
             Spacer()
 
             if let record = inventory.pendingMove(for: item) {
-                // The move is written; only the restart is missing. Shown on
-                // the row itself so cause and remedy sit together.
                 Text(record.side == .hidden ? "숨김 예약" : "표시 예약")
                     .font(.caption)
                     .foregroundStyle(.orange)
@@ -219,9 +235,22 @@ struct IconListView: View {
                     .help("\(item.ownerName) 아이콘을 클릭합니다 — 숨겨져 있어도 됩니다")
 
                 if inventory.canMove(item) {
-                    Button(side == .hidden ? "숨기기" : "꺼내기") { move(item, to: side) }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                    let targets = destinations(besides: currentZone)
+                    if targets.count == 1 {
+                        // One destination is a button, not a menu: the common
+                        // single-group case should stay one click.
+                        Button(targets[0].1) { move(item, to: targets[0].0) }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                    } else {
+                        Menu("옮기기") {
+                            ForEach(Array(targets.enumerated()), id: \.offset) { _, target in
+                                Button(target.1) { move(item, to: target.0) }
+                            }
+                        }
+                        .menuStyle(.borderlessButton)
+                        .fixedSize()
+                    }
                 } else {
                     Text("—")
                         .foregroundStyle(.tertiary)
@@ -263,12 +292,12 @@ struct IconListView: View {
 
     // MARK: - Actions
 
-    private func move(_ item: MenuBarInventory.Item, to side: MenuBarArranger.Side) {
-        guard let boundary = engine.boundaryPosition() else {
+    private func move(_ item: MenuBarInventory.Item, to zone: MenuBarZone) {
+        guard !inventory.boundaries.isEmpty else {
             problem = "경계 위치를 아직 알 수 없습니다. 설정을 한 번 닫았다 열어보세요."
             return
         }
-        if !inventory.move(item, to: side, boundaryPosition: boundary) {
+        if !inventory.move(item, toZone: zone) {
             problem = "\(item.ownerName)의 아이콘 위치를 고쳐 쓸 수 없었습니다."
         }
     }

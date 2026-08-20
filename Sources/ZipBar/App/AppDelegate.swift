@@ -11,8 +11,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private var inventoryTimer: Timer?
     private let animator = SlimeAnimator()
-    /// Current deformation, driven by the animator between redraws.
+    /// Current deformation and eye state, driven by the animator.
     private var slimeSquash: CGFloat = 0
+    private var slimeBlinking = false
 
     /// Autosave name for the app's own control item.
     static let controlAutosaveName = "com.zipbar.control"
@@ -96,10 +97,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // What the icon list will show, without opening the window.
         if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_INVENTORY"] == "1" {
             let inventory = MenuBarInventory()
+            inventory.boundaries = engine.boundaries()
             inventory.refresh()
             var out = ["authorized=\(inventory.isAuthorized)",
                        "숨겨진 \(inventory.hidden.count)개 / 보이는 \(inventory.visible.count)개"]
             out.append("미표시 \(inventory.notDrawn.count)개는 목록에서 제외")
+            out.append("-- 경계 --")
+            for b in inventory.boundaries {
+                out.append("  \(b.name) [\(b.behavior)] pos=\(Int(b.position))")
+            }
+            out.append("-- 구역별 --")
+            for (i, b) in inventory.boundaries.enumerated() {
+                let names = inventory.items(in: .group(i)).map(\.ownerName)
+                out.append("  \(b.name): \(names.isEmpty ? "(비어 있음)" : names.joined(separator: ", "))")
+            }
+            out.append("  밖: \(inventory.items(in: .visible).map(\.ownerName).joined(separator: ", "))")
             out.append("-- 옮겨야 할 것 \(inventory.misplaced.count)개 --")
             for m in inventory.misplaced {
                 out.append("  \(m.item.ownerName): \(m.instruction)  [key=\(m.item.preferenceKey)]")
@@ -367,9 +379,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         controlItem = item
 
-        animator.onFrame = { [weak self] squash in
+        animator.onFrame = { [weak self] squash, blinking in
             guard let self else { return }
             self.slimeSquash = squash
+            self.slimeBlinking = blinking
             self.refreshSlime()
         }
         animator.startIdling()
@@ -385,6 +398,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func refreshInventory() {
         let hadActivity = inventory.hasActivity
+        // Boundaries first: the sweep classifies every icon against them, so
+        // refreshing with a stale set would file icons under the wrong group.
+        inventory.boundaries = engine.boundaries()
         inventory.refresh()
         // A hidden icon changed while the user was not looking: the slime
         // notices before the dot appears, which is what makes the dot feel
@@ -405,7 +421,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let image = SlimeRenderer.image(
             hiddenCount: hidden,
             hasActivity: inventory.hasActivity,
-            squash: slimeSquash
+            squash: slimeSquash,
+            blinking: slimeBlinking
         ) {
             button.image = image
             button.title = ""

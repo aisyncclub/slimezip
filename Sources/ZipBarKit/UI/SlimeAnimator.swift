@@ -10,8 +10,13 @@ import AppKit
 @MainActor
 public final class SlimeAnimator {
 
-    /// Handed a fresh frame to display.
-    public var onFrame: ((CGFloat) -> Void)?
+    /// Handed a fresh frame: how far to deform, and whether the eyes are shut.
+    ///
+    /// Blinking rides alongside the motion rather than being one of the
+    /// motions, because eyes and body are independent — a slime can blink
+    /// mid-breath, and making them share a track would force one to wait for
+    /// the other and read as a stutter.
+    public var onFrame: ((CGFloat, Bool) -> Void)?
 
     /// Motion the slime can perform.
     public enum Motion {
@@ -57,10 +62,21 @@ public final class SlimeAnimator {
 
     /// Range between idle breaths. Randomised so the rhythm never reads as a
     /// machine ticking.
-    static let breathGap: ClosedRange<TimeInterval> = 4...9
+    static let breathGap: ClosedRange<TimeInterval> = 2...5
+
+    /// Range between blinks, and how long the eyes stay shut.
+    ///
+    /// Roughly a human resting rate. Regular enough to read as alive, varied
+    /// enough that it never becomes a metronome in the corner of the eye.
+    static let blinkGap: ClosedRange<TimeInterval> = 2.5...6.5
+    static let blinkDuration: TimeInterval = 0.14
+    /// Chance a blink comes in a pair, the way real ones often do.
+    static let doubleBlinkChance = 0.25
 
     private var frameTimer: Timer?
     private var idleTimer: Timer?
+    private var blinkTimer: Timer?
+    private var isBlinking = false
     private var startedAt: Date?
     private var motion: Motion?
     private var idleBreathing = false
@@ -70,6 +86,7 @@ public final class SlimeAnimator {
     deinit {
         frameTimer?.invalidate()
         idleTimer?.invalidate()
+        blinkTimer?.invalidate()
     }
 
     /// Begins the idle rhythm. Safe to call repeatedly.
@@ -77,14 +94,66 @@ public final class SlimeAnimator {
         guard !idleBreathing else { return }
         idleBreathing = true
         scheduleNextBreath()
+        scheduleNextBlink()
     }
 
     public func stop() {
         idleBreathing = false
         idleTimer?.invalidate(); idleTimer = nil
+        blinkTimer?.invalidate(); blinkTimer = nil
         frameTimer?.invalidate(); frameTimer = nil
         motion = nil
-        onFrame?(0)
+        isBlinking = false
+        onFrame?(0, false)
+    }
+
+    // MARK: - Blinking
+
+    private func scheduleNextBlink() {
+        guard idleBreathing else { return }
+        blinkTimer?.invalidate()
+        blinkTimer = schedule(after: .random(in: Self.blinkGap)) { [weak self] in
+            self?.blink(remaining: Double.random(in: 0...1) < Self.doubleBlinkChance ? 1 : 0)
+        }
+    }
+
+    private func blink(remaining: Int) {
+        isBlinking = true
+        emit()
+        blinkTimer = schedule(after: Self.blinkDuration) { [weak self] in
+            guard let self else { return }
+            self.isBlinking = false
+            self.emit()
+            if remaining > 0 {
+                // The gap inside a double blink, not a whole new interval.
+                self.blinkTimer = self.schedule(after: 0.12) { [weak self] in
+                    self?.blink(remaining: remaining - 1)
+                }
+            } else {
+                self.scheduleNextBlink()
+            }
+        }
+    }
+
+    /// Timers on the common run loop mode, so nothing freezes while a menu is
+    /// open — a slime that stops living the moment you click it is worse than
+    /// one that never moved.
+    private func schedule(after delay: TimeInterval, _ body: @escaping () -> Void) -> Timer {
+        let timer = Timer(timeInterval: delay, repeats: false) { _ in
+            MainActor.assumeIsolated { body() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        return timer
+    }
+
+    private func emit() {
+        onFrame?(currentSquash, isBlinking)
+    }
+
+    private var currentSquash: CGFloat {
+        guard let motion, let startedAt else { return 0 }
+        let t = Date().timeIntervalSince(startedAt) / motion.duration
+        return t < 1 ? motion.squash(at: t) : 0
     }
 
     /// Plays a motion now, interrupting any idle breath.
@@ -113,11 +182,11 @@ public final class SlimeAnimator {
         guard t < 1 else {
             frameTimer?.invalidate(); frameTimer = nil
             self.motion = nil
-            onFrame?(0)                 // settle back to the resting shape
+            emit()                      // settle back to the resting shape
             scheduleNextBreath()
             return
         }
-        onFrame?(motion.squash(at: t))
+        onFrame?(motion.squash(at: t), isBlinking)
     }
 
     private func scheduleNextBreath() {
