@@ -32,6 +32,17 @@ public final class MenuBarInventory: ObservableObject {
     @Published public private(set) var notes: [String] = []
     @Published public private(set) var isAuthorized = false
     @Published public private(set) var lastRefreshFailed = false
+    /// Hidden icons whose title or width changed since the last sweep.
+    ///
+    /// macOS publishes no unread or badge state for another app's status
+    /// item — the attribute probe found only the standard geometry and title
+    /// set — so this is the strongest available proxy for "that app wants
+    /// you". It is a change detector, and it is labelled as one everywhere it
+    /// surfaces rather than being dressed up as notification support.
+    @Published public private(set) var activeIDs: Set<String> = []
+
+    /// Last seen signature per item, for the comparison above.
+    private var signatures: [String: String] = [:]
 
     private let sweep: AXSweepProbe
 
@@ -53,6 +64,7 @@ public final class MenuBarInventory: ObservableObject {
         let bands = Self.menuBarBands()
         var perApp: [pid_t: Int] = [:]
 
+        var stillActive = activeIDs
         items = result.items.map { snapshot in
             let pid = snapshot.processIdentifier
             let indexInApp = pid.map { p -> Int in
@@ -60,6 +72,14 @@ public final class MenuBarInventory: ObservableObject {
                 perApp[p] = next + 1
                 return next
             } ?? 0
+
+            // Signature covers what a status item can change without moving:
+            // its label and how much room it takes.
+            let signature = "\(snapshot.title ?? "")|\(Int(snapshot.frame?.width ?? 0))"
+            if let previous = signatures[snapshot.id], previous != signature {
+                stillActive.insert(snapshot.id)
+            }
+            signatures[snapshot.id] = signature
 
             return Item(
                 id: snapshot.id,
@@ -73,7 +93,20 @@ public final class MenuBarInventory: ObservableObject {
                 isOurs: snapshot.bundleIdentifier == Bundle.main.bundleIdentifier
             )
         }
+
+        // Activity only means anything while an icon is out of sight.
+        let hiddenIDs = Set(items.filter { $0.presence == .hidden }.map(\.id))
+        activeIDs = stillActive.intersection(hiddenIDs)
     }
+
+    /// Forget outstanding activity — called when the user opens the group and
+    /// has therefore had the chance to see whatever changed.
+    public func clearActivity() {
+        activeIDs.removeAll()
+    }
+
+    /// Whether any hidden icon is flagged, which is what the slime shows.
+    public var hasActivity: Bool { !activeIDs.isEmpty }
 
     /// Click an item where it sits. Works even on a hidden item, which is the
     /// point: a notification you cannot see is still one you may need to open.

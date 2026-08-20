@@ -43,7 +43,6 @@ public final class SpacerStrategy: HidingStrategy {
 
     private struct GroupItems {
         let separator: NSStatusItem
-        let chevron: NSStatusItem
     }
 
     private var items: [MenuBarGroup.ID: GroupItems] = [:]
@@ -87,7 +86,6 @@ public final class SpacerStrategy: HidingStrategy {
         autoHideTimers.removeAll()
         for entry in items.values {
             NSStatusBar.system.removeStatusItem(entry.separator)
-            NSStatusBar.system.removeStatusItem(entry.chevron)
         }
         items.removeAll()
         if let screenObserver {
@@ -103,7 +101,6 @@ public final class SpacerStrategy: HidingStrategy {
         for removed in existing.subtracting(incoming) {
             if let entry = items.removeValue(forKey: removed) {
                 NSStatusBar.system.removeStatusItem(entry.separator)
-                NSStatusBar.system.removeStatusItem(entry.chevron)
             }
             autoHideTimers.removeValue(forKey: removed)?.invalidate()
         }
@@ -112,8 +109,6 @@ public final class SpacerStrategy: HidingStrategy {
         for group in layout.groups {
             if items[group.id] == nil {
                 install(group)
-            } else {
-                refreshChevron(for: group)
             }
         }
     }
@@ -130,7 +125,6 @@ public final class SpacerStrategy: HidingStrategy {
         entry.separator.length = collapsed
             ? SpacerGeometry.hidingLength(widestScreenWidth: Self.widestScreenWidth())
             : SpacerGeometry.expandedLength
-        refreshChevron(for: group)
         collapseDidChange?(groupID, collapsed)
 
         autoHideTimers.removeValue(forKey: groupID)?.invalidate()
@@ -178,36 +172,22 @@ public final class SpacerStrategy: HidingStrategy {
         "com.zipbar.separator.\(id.uuidString)"
     }
 
-    public nonisolated static func chevronAutosaveName(_ id: MenuBarGroup.ID) -> String {
-        "com.zipbar.chevron.\(id.uuidString)"
-    }
-
     /// Our items in the order they must appear, left to right. The separator
     /// leads because it is the one that displaces things; everything of ours
     /// that follows it is therefore safe from its inflation.
     public nonisolated static func autosaveNames(for layout: MenuBarLayout) -> [String] {
-        layout.groups.flatMap { [separatorAutosaveName($0.id), chevronAutosaveName($0.id)] }
+        layout.groups.map { separatorAutosaveName($0.id) }
     }
 
     private func install(_ group: MenuBarGroup) {
         let separator = NSStatusBar.system.statusItem(withLength: SpacerGeometry.expandedLength)
         separator.autosaveName = Self.separatorAutosaveName(group.id)
-        StatusItemGlyph.apply(
-            to: separator.button,
-            symbolName: Self.separatorSymbol,
-            fallbackText: "|",
-            accessibilityDescription: "\(group.name) 구분자"
-        )
-        separator.button?.toolTip = "\(group.name) 구분자 — 숨길 아이콘을 이 왼쪽에 ⌘드래그하세요"
+        // No glyph: the slime is the only thing of ours the user should see.
+        separator.button?.image = nil
+        separator.button?.title = ""
+        separator.button?.toolTip = "\(group.name) 경계 — 숨길 아이콘을 슬라임 왼쪽으로 ⌘드래그하세요"
 
-        let chevron = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        chevron.autosaveName = Self.chevronAutosaveName(group.id)
-        chevron.button?.target = self
-        chevron.button?.action = #selector(chevronClicked(_:))
-        chevron.button?.identifier = NSUserInterfaceItemIdentifier(group.id.uuidString)
-
-        items[group.id] = GroupItems(separator: separator, chevron: chevron)
-        refreshChevron(for: group)
+        items[group.id] = GroupItems(separator: separator)
 
         // Start expanded, never collapsed.
         //
@@ -218,24 +198,6 @@ public final class SpacerStrategy: HidingStrategy {
         // app look like it had failed to launch. Collapse is a deliberate
         // act, after the user has put icons in the group.
         setCollapsed(false, for: group.id)
-    }
-
-    private func refreshChevron(for group: MenuBarGroup) {
-        guard let entry = items[group.id] else { return }
-        let collapsed = SpacerGeometry.isCollapsed(length: entry.separator.length)
-        let symbol = collapsed ? group.symbolName : MenuBarGroup.expandedSymbol
-        StatusItemGlyph.apply(
-            to: entry.chevron.button,
-            symbolName: symbol,
-            fallbackText: collapsed ? "‹" : "›",
-            accessibilityDescription: "\(group.name) \(collapsed ? "펴기" : "접기")"
-        )
-        entry.chevron.button?.toolTip = "\(group.name) — \(collapsed ? "펴기" : "접기")"
-    }
-
-    @objc private func chevronClicked(_ sender: NSStatusBarButton) {
-        guard let raw = sender.identifier?.rawValue, let id = UUID(uuidString: raw) else { return }
-        toggle(id)
     }
 
     private func recomputeHidingLengths() {
@@ -250,7 +212,4 @@ public final class SpacerStrategy: HidingStrategy {
         NSScreen.screens.map(\.frame.width).max() ?? NSScreen.main?.frame.width ?? 1_440
     }
 
-    /// Two upright bars read unambiguously as a divider at menu bar size.
-    /// (`line.3.vertical`, used previously, is not a real SF Symbol.)
-    nonisolated static let separatorSymbol = "pause.fill"
 }

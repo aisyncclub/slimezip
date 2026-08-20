@@ -34,6 +34,7 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 # the signature, so an unsigned binary would re-prompt on every rebuild.
 # Phase 5 replaces this with a Developer ID identity plus notarization.
 cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+cp -R "$ROOT/Resources/Slime" "$APP/Contents/Resources/Slime"
 
 echo "==> codesign (ad-hoc)"
 codesign --force --sign - \

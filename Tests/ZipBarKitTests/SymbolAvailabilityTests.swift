@@ -14,12 +14,6 @@ import AppKit
 @Suite("SF Symbol 가용성")
 struct SymbolAvailabilityTests {
 
-    @Test("구분자 심볼이 존재한다")
-    func separatorSymbolResolves() {
-        #expect(StatusItemGlyph.resolves(SpacerStrategy.separatorSymbol),
-                "'\(SpacerStrategy.separatorSymbol)'가 이 macOS에 없습니다 — 구분자가 보이지 않게 됩니다")
-    }
-
     @Test("펼침 셰브론 심볼이 존재한다")
     func expandedSymbolResolves() {
         #expect(StatusItemGlyph.resolves(MenuBarGroup.expandedSymbol))

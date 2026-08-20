@@ -6,8 +6,10 @@ import ZipBarKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let engine = MenuBarEngine()
+    private let inventory = MenuBarInventory()
     private var controlItem: NSStatusItem?
     private var settingsWindow: NSWindow?
+    private var inventoryTimer: Timer?
 
     /// Autosave name for the app's own control item.
     static let controlAutosaveName = "com.zipbar.control"
@@ -114,6 +116,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // What does a status item actually publish? Decides whether an
+        // alert on a hidden app is detectable at all.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_ATTRS"] == "1" {
+            var out: [String] = []
+            for app in NSWorkspace.shared.runningApplications where app.activationPolicy != .prohibited {
+                let axApp = AXUIElementCreateApplication(app.processIdentifier)
+                AXUIElementSetMessagingTimeout(axApp, 0.25)
+                var extras: CFTypeRef?
+                guard AXUIElementCopyAttributeValue(axApp, kAXExtrasMenuBarAttribute as CFString, &extras) == .success,
+                      let extras, CFGetTypeID(extras) == AXUIElementGetTypeID() else { continue }
+                var kids: CFTypeRef?
+                guard AXUIElementCopyAttributeValue(extras as! AXUIElement, kAXChildrenAttribute as CFString, &kids) == .success,
+                      let children = kids as? [AXUIElement], let first = children.first else { continue }
+                var names: CFArray?
+                AXUIElementCopyAttributeNames(first, &names)
+                let list = (names as? [String] ?? []).sorted()
+                out.append("\(app.localizedName ?? "?"): \(list.joined(separator: " "))")
+            }
+            FileHandle.standardError.write(Data((out.joined(separator: "\n\n") + "\n").utf8))
+            NSApp.terminate(nil)
+            return
+        }
+
         // First run: explain the ⌘-drag step, because with the spacer backend
         // nothing appears to happen until the user arranges their icons.
         if !UserDefaults.standard.bool(forKey: Self.onboardingShownKey) {
@@ -200,6 +225,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Status items are not enumerable from outside, but NSStatusBar
         // reports the thickness it is managing for us.
         lines.append("menuBarThickness=\(NSStatusBar.system.thickness)")
+        // The slime is the app's only icon; if its artwork is missing the
+        // user sees nothing, so the diagnostic says whether it loaded.
+        lines.append("slimeArtwork=\(SlimeRenderer.availableStageCount)/\(SlimeRenderer.stageCount)")
 
         // Whether we can see other apps' icons at all decides what the app
         // can offer: without identity there is no list to show and nothing to
@@ -217,6 +245,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        inventoryTimer?.invalidate()
         engine.stop()
     }
 

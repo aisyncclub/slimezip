@@ -16,7 +16,14 @@ public enum SpacerGeometry {
     public static let minimumHidingLength: CGFloat = 500
 
     /// Width of the separator when the group is open.
-    public static let expandedLength: CGFloat = 20
+    /// Width of the separator when the group is open.
+    ///
+    /// Deliberately hairline. The separator exists to be inflated, not to be
+    /// looked at: the slime sitting immediately to its right is the one icon
+    /// the user is meant to see, and a visible bar beside it would read as a
+    /// second, redundant control. A sliver still accepts a ⌘-drag, so the
+    /// boundary remains usable while staying out of the way.
+    public static let expandedLength: CGFloat = 1
 
     /// A separator longer than this is considered collapsed.
     ///
