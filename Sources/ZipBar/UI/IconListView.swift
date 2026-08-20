@@ -2,27 +2,29 @@ import SwiftUI
 import AppKit
 import ZipBarKit
 
-/// Shows what the slime is holding, what is still out in the open, and lets
-/// the user move icons between the two.
+/// The whole arrangement in two lists: what is hidden, what is visible, and
+/// one button per icon to move it across.
 ///
-/// Moving works by rewriting where macOS remembers each icon, which only takes
-/// effect when the owning app next starts — see `MenuBarArranger`. That delay
-/// is the honest shape of the feature, so the UI states it rather than letting
-/// a click look like it did nothing.
+/// Earlier versions had four sections and three controls per row — a
+/// preference dropdown, a move button, and a to-do list telling the user to
+/// ⌘-drag. All of it collapsed into one action once moves became real: the
+/// button states the intent, the preference follows it, and a drag the user
+/// makes by hand wins over anything stored (see `MenuBarInventory.reconcile`).
+///
+/// A move only takes effect when the owning app restarts, so a row with one
+/// waiting shows that state inline — where the click happened — instead of in
+/// a separate list the user has to correlate.
 struct IconListView: View {
     @ObservedObject var inventory: MenuBarInventory
     @ObservedObject var engine: MenuBarEngine
 
-    /// A written position waiting on its app to restart.
-    private struct Pending: Identifiable {
+    private struct RestartRequest: Identifiable {
         let id: String
-        let item: MenuBarInventory.Item
-        let plan: MenuBarArranger.Plan
-        let previous: Double?
+        let items: [MenuBarInventory.Item]
+        var names: String { items.map(\.ownerName).joined(separator: ", ") }
     }
 
-    @State private var pending: [Pending] = []
-    @State private var restartTarget: Pending?
+    @State private var restartRequest: RestartRequest?
     @State private var problem: String?
 
     var body: some View {
@@ -35,20 +37,20 @@ struct IconListView: View {
         }
         .onAppear { inventory.refresh() }
         .confirmationDialog(
-            restartTarget.map { "\($0.item.ownerName)을(를) 재시작할까요?" } ?? "",
+            restartRequest.map { "재시작: \($0.names)" } ?? "",
             isPresented: Binding(
-                get: { restartTarget != nil },
-                set: { if !$0 { restartTarget = nil } }
+                get: { restartRequest != nil },
+                set: { if !$0 { restartRequest = nil } }
             ),
             titleVisibility: .visible
         ) {
-            Button("재시작") { performRestart() }
-            Button("취소", role: .cancel) { restartTarget = nil }
+            Button("재시작") { performRestarts() }
+            Button("취소", role: .cancel) { restartRequest = nil }
         } message: {
-            Text("아이콘 위치는 앱이 시작할 때 읽힙니다. 저장하지 않은 작업이 있으면 "
-                 + "그 앱이 먼저 물어봅니다.")
+            Text("아이콘 위치는 앱이 시작할 때 읽히므로, 옮긴 위치는 재시작해야 "
+                 + "적용됩니다. 저장하지 않은 작업이 있는 앱은 스스로 거부할 수 있습니다.")
         }
-        .alert("옮기지 못했습니다", isPresented: Binding(
+        .alert("문제가 있었습니다", isPresented: Binding(
             get: { problem != nil }, set: { if !$0 { problem = nil } }
         )) {
             Button("확인", role: .cancel) { problem = nil }
@@ -80,22 +82,26 @@ struct IconListView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: - List
+    // MARK: - Content
+
+    /// Items with a move waiting on a restart, in list order.
+    private var waiting: [MenuBarInventory.Item] {
+        (inventory.hidden + inventory.visible)
+            .filter { inventory.pendingMove(for: $0) != nil }
+    }
 
     private var content: some View {
         VStack(spacing: 0) {
-            List {
-                if !pending.isEmpty { pendingSection }
-                if !inventory.misplaced.isEmpty { todoSection }
+            if !waiting.isEmpty { applyBar }
 
+            List {
                 section(
-                    "슬라임이 물고 있는 것", systemImage: "eye.slash",
+                    "숨겨진 아이콘", systemImage: "eye.slash",
                     items: inventory.hidden, moveTo: .visible,
-                    empty: "아직 아무것도 물고 있지 않습니다. 아래에서 넣고 싶은 아이콘의 "
-                         + "넣기를 누르세요."
+                    empty: "숨겨진 아이콘이 없습니다. 아래 목록에서 숨기기를 누르세요."
                 )
                 section(
-                    "넣을 수 있는 것", systemImage: "eye",
+                    "보이는 아이콘", systemImage: "eye",
                     items: inventory.visible, moveTo: .hidden,
                     empty: "메뉴바에 보이는 아이콘이 없습니다."
                 )
@@ -105,51 +111,27 @@ struct IconListView: View {
         }
     }
 
-    /// Moves that are written but not yet in effect. Kept at the top because
-    /// a click that appears to have done nothing is the thing most likely to
-    /// send the user looking for a bug.
-    private var pendingSection: some View {
-        Section {
-            ForEach(pending) { entry in
-                HStack(spacing: 10) {
-                    appIcon(for: entry.item).frame(width: 18, height: 18)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(entry.item.ownerName)
-                        Text(entry.plan.side == .hidden ? "넣기 예약됨" : "꺼내기 예약됨")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button("되돌리기") { undo(entry) }
-                        .buttonStyle(.borderless)
-                    Button("지금 재시작") { restartTarget = entry }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                }
-                .padding(.vertical, 1)
+    /// One strip that finishes everything at once. Restarting apps is the
+    /// tedious half of a move, so the moment anything is waiting the way to
+    /// complete it all sits at the top, not per-row only.
+    private var applyBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "clock.arrow.circlepath")
+                .foregroundStyle(.orange)
+            Text("\(waiting.count)개 이동이 재시작을 기다립니다")
+                .font(.callout)
+            Spacer()
+            Button("모두 적용") {
+                restartRequest = RestartRequest(
+                    id: waiting.map(\.preferenceKey).joined(),
+                    items: waiting)
             }
-        } header: {
-            Label("재시작하면 적용됩니다 (\(pending.count))", systemImage: "clock.arrow.circlepath")
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
         }
-    }
-
-    private var todoSection: some View {
-        Section {
-            ForEach(inventory.misplaced) { entry in
-                HStack(spacing: 10) {
-                    appIcon(for: entry.item).frame(width: 18, height: 18)
-                    Text(entry.item.ownerName)
-                    Spacer()
-                    Text(entry.instruction)
-                        .font(.callout)
-                        .foregroundStyle(.orange)
-                }
-                .padding(.vertical, 1)
-            }
-        } header: {
-            Label("옮겨야 할 것 (\(inventory.misplaced.count))",
-                  systemImage: "exclamationmark.triangle")
-        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.orange.opacity(0.08))
     }
 
     @ViewBuilder
@@ -196,20 +178,33 @@ struct IconListView: View {
 
             Spacer()
 
-            // Pressing reaches a hidden icon without unhiding it.
-            Button("열기") { inventory.press(item) }
-                .buttonStyle(.borderless)
-                .help("\(item.ownerName) 아이콘을 클릭합니다")
-
-            if inventory.canMove(item) {
-                Button(side == .hidden ? "넣기" : "꺼내기") { move(item, to: side) }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(pending.contains { $0.id == item.preferenceKey })
+            if let record = inventory.pendingMove(for: item) {
+                // The move is written; only the restart is missing. Shown on
+                // the row itself so cause and remedy sit together.
+                Text(record.side == .hidden ? "숨김 예약" : "표시 예약")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                Button("취소") { inventory.cancelMove(for: item) }
+                    .buttonStyle(.borderless)
+                Button("재시작") {
+                    restartRequest = RestartRequest(id: item.preferenceKey, items: [item])
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
             } else {
-                Text("—")
-                    .foregroundStyle(.tertiary)
-                    .help("이 아이콘은 앱을 특정할 수 없어 옮길 수 없습니다")
+                Button("열기") { inventory.press(item) }
+                    .buttonStyle(.borderless)
+                    .help("\(item.ownerName) 아이콘을 클릭합니다 — 숨겨져 있어도 됩니다")
+
+                if inventory.canMove(item) {
+                    Button(side == .hidden ? "숨기기" : "꺼내기") { move(item, to: side) }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                } else {
+                    Text("—")
+                        .foregroundStyle(.tertiary)
+                        .help("이 아이콘은 앱을 특정할 수 없어 옮길 수 없습니다")
+                }
             }
         }
         .padding(.vertical, 2)
@@ -227,9 +222,9 @@ struct IconListView: View {
     private var footer: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "info.circle").foregroundStyle(.secondary)
-            Text("넣기·꺼내기는 macOS가 아이콘 위치를 기억하는 값을 고쳐 씁니다. "
-                 + "그 값은 앱이 시작할 때 읽히므로 해당 앱을 재시작해야 적용됩니다. "
-                 + "직접 옮기려면 ⌘를 누른 채 경계 왼쪽으로 끌면 숨겨집니다.")
+            Text("숨기기·꺼내기는 macOS가 아이콘 위치를 기억하는 값을 고쳐 쓰고, "
+                 + "해당 앱이 재시작될 때 적용됩니다. ⌘드래그로 직접 옮기면 즉시 "
+                 + "반영되며, 그 배치가 항상 우선합니다.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -251,35 +246,38 @@ struct IconListView: View {
             problem = "경계 위치를 아직 알 수 없습니다. 설정을 한 번 닫았다 열어보세요."
             return
         }
-        guard let result = inventory.move(item, to: side, boundaryPosition: boundary) else {
+        if !inventory.move(item, to: side, boundaryPosition: boundary) {
             problem = "\(item.ownerName)의 아이콘 위치를 고쳐 쓸 수 없었습니다."
+        }
+    }
+
+    /// Restarts the requested apps one at a time. Sequential on purpose:
+    /// quitting half the menu bar simultaneously turns the bar into a slot
+    /// machine, and a single failure is easier to attribute when the apps go
+    /// down one by one.
+    private func performRestarts() {
+        guard let request = restartRequest else { return }
+        restartRequest = nil
+        restartNext(Array(request.items))
+    }
+
+    private func restartNext(_ remaining: [MenuBarInventory.Item]) {
+        guard let item = remaining.first else {
+            inventory.refresh()
             return
         }
-        pending.append(Pending(
-            id: item.preferenceKey, item: item,
-            plan: result.plan, previous: result.previous))
-    }
-
-    private func undo(_ entry: Pending) {
-        inventory.undo(entry.plan, previous: entry.previous)
-        inventory.setDesired(nil, for: entry.item)
-        pending.removeAll { $0.id == entry.id }
-    }
-
-    private func performRestart() {
-        guard let entry = restartTarget else { return }
-        restartTarget = nil
-        inventory.restart(entry.item) { outcome in
+        inventory.restart(item) { outcome in
             switch outcome {
             case .restarted, .notRunning:
-                pending.removeAll { $0.id == entry.id }
+                break
             case .refusedToQuit:
-                problem = "\(entry.item.ownerName)이(가) 종료를 거부했습니다. "
-                    + "저장하지 않은 작업이 있는지 확인한 뒤 다시 시도하세요."
+                problem = "\(item.ownerName)이(가) 종료를 거부했습니다. 저장하지 않은 "
+                    + "작업을 정리한 뒤 그 앱을 직접 재시작하면 적용됩니다."
             case .failedToRelaunch:
-                problem = "\(entry.item.ownerName)을(를) 다시 실행하지 못했습니다. "
-                    + "직접 실행하면 옮긴 위치가 적용됩니다."
+                problem = "\(item.ownerName)을(를) 다시 실행하지 못했습니다. 직접 "
+                    + "실행하면 옮긴 위치가 적용됩니다."
             }
+            restartNext(Array(remaining.dropFirst()))
         }
     }
 }

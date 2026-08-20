@@ -423,7 +423,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func slimeClicked() {
-        guard let event = NSApp.currentEvent else { return }
+        // No current event means the click came through accessibility
+        // (VoiceOver, or automation): treat it as the primary action. The
+        // old guard returned silently here, which made the slime a button
+        // that did nothing for anyone not using a physical mouse.
+        guard let event = NSApp.currentEvent else {
+            toggleAll()
+            return
+        }
         let wantsMenu = event.type == .rightMouseUp || event.modifierFlags.contains(.control)
         if wantsMenu {
             showControlMenu()

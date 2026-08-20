@@ -69,17 +69,20 @@ public final class MenuBarInventory: ObservableObject {
     private let preferences: IconPreferenceStore
     private let arranger: MenuBarArranger
     private let restarter: AppRestarter
+    private let pendingStore: PendingMoveStore
 
     public init(
         sweep: AXSweepProbe = AXSweepProbe(),
         preferences: IconPreferenceStore = IconPreferenceStore(),
         arranger: MenuBarArranger = MenuBarArranger(),
-        restarter: AppRestarter = AppRestarter()
+        restarter: AppRestarter = AppRestarter(),
+        pendingStore: PendingMoveStore = PendingMoveStore()
     ) {
         self.sweep = sweep
         self.preferences = preferences
         self.arranger = arranger
         self.restarter = restarter
+        self.pendingStore = pendingStore
     }
 
     // MARK: - Moving
@@ -94,32 +97,62 @@ public final class MenuBarInventory: ObservableObject {
     }
 
     /// Rewrites where macOS remembers this icon, so it lands on the requested
-    /// side the next time its app starts.
-    ///
-    /// - Returns: the plan that was applied, for undo and for telling the user
-    ///   what happened. nil when the icon cannot be addressed.
+    /// side the next time its app starts. The move is recorded on disk until
+    /// it is seen to have taken effect, so the wait survives the window
+    /// closing and undo keeps working hours later.
     @discardableResult
     public func move(
         _ item: Item, to side: MenuBarArranger.Side, boundaryPosition: Double
-    ) -> (plan: MenuBarArranger.Plan, previous: Double?)? {
+    ) -> Bool {
         guard canMove(item),
+              let bundle = item.bundleIdentifier,
               let plan = arranger.plan(
-                bundleIdentifier: item.bundleIdentifier,
+                bundleIdentifier: bundle,
                 ownerName: item.ownerName,
                 indexInApp: item.indexInApp,
                 side: side,
                 boundaryPosition: boundaryPosition),
               case .some(let previous) = arranger.apply(plan)
-        else { return nil }
+        else { return false }
 
+        pendingStore.set(
+            PendingMoveStore.Record(
+                bundleIdentifier: bundle,
+                positionKey: plan.key,
+                previousValue: previous,
+                side: side == .hidden ? .hidden : .visible),
+            for: item.preferenceKey)
         // The stated preference follows the move, so the icon does not
-        // immediately show up as misplaced against its own arrangement.
+        // immediately show up as out of place against its own arrangement.
         setDesired(side == .hidden ? .hidden : .visible, for: item)
-        return (plan, previous)
+        objectWillChange.send()
+        return true
     }
 
-    public func undo(_ plan: MenuBarArranger.Plan, previous: Double?) {
-        arranger.revert(plan, to: previous)
+    /// The moves still waiting for their app to restart.
+    public var pendingMoves: [String: PendingMoveStore.Record] {
+        pendingStore.all()
+    }
+
+    public func pendingMove(for item: Item) -> PendingMoveStore.Record? {
+        pendingStore.record(for: item.preferenceKey)
+    }
+
+    /// Cancels a waiting move: puts the overwritten value back — removing the
+    /// key entirely when the app had never stored one — and drops the record.
+    public func cancelMove(for item: Item) {
+        guard let record = pendingStore.record(for: item.preferenceKey) else { return }
+        let plan = MenuBarArranger.Plan(
+            bundleIdentifier: record.bundleIdentifier,
+            ownerName: item.ownerName,
+            key: record.positionKey,
+            currentPosition: nil,
+            targetPosition: 0,
+            side: record.side == .hidden ? .hidden : .visible)
+        arranger.revert(plan, to: record.previousValue)
+        setDesired(nil, for: item)
+        pendingStore.remove(for: item.preferenceKey)
+        objectWillChange.send()
     }
 
     /// A written position is theoretical until its app restarts.
@@ -218,6 +251,36 @@ public final class MenuBarInventory: ObservableObject {
         // Activity only means anything while an icon is out of sight.
         let hiddenIDs = Set(items.filter { $0.presence == .hidden }.map(\.id))
         activeIDs = stillActive.intersection(hiddenIDs)
+
+        reconcile()
+    }
+
+    /// Squares the books between what was asked for and what the bar shows.
+    ///
+    /// Two updates, both in the direction of reality:
+    ///
+    /// - A pending move whose icon now sits on the requested side has taken
+    ///   effect; its record is done and keeping it would show a "restart"
+    ///   button for a move that already happened.
+    /// - A stated preference that disagrees with reality *without* a pending
+    ///   move can only come from the user ⌘-dragging the icon themselves.
+    ///   Their drag is their decision; the preference follows it rather than
+    ///   nagging them to undo what they just did on purpose.
+    private func reconcile() {
+        for item in items where item.presence != .notDrawn && !item.isOurs {
+            let actual: IconPreferenceStore.Desired = item.presence == .hidden ? .hidden : .visible
+
+            if let record = pendingStore.record(for: item.preferenceKey) {
+                let wanted: IconPreferenceStore.Desired =
+                    record.side == .hidden ? .hidden : .visible
+                if wanted == actual {
+                    pendingStore.remove(for: item.preferenceKey)
+                }
+            } else if let desired = preferences.desired(for: item.preferenceKey),
+                      desired != actual {
+                preferences.set(actual, for: item.preferenceKey)
+            }
+        }
     }
 
     /// Forget outstanding activity — called when the user opens the group and
