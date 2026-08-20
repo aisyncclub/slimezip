@@ -478,6 +478,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let settingsWindow {
             settingsWindow.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
+            engine.setBoundaryVisible(true)
             return
         }
 
@@ -496,6 +497,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow = window
+
+        // Settings open means the user is arranging, which is the only time
+        // the drag boundary is worth the second visible item.
+        engine.setBoundaryVisible(true)
     }
 }
 
@@ -505,6 +510,7 @@ extension AppDelegate: NSWindowDelegate {
         // against current engine state.
         if (notification.object as? NSWindow) === settingsWindow {
             settingsWindow = nil
+            engine.setBoundaryVisible(false)
         }
     }
 }

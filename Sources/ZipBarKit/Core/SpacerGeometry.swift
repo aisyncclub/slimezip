@@ -16,7 +16,6 @@ public enum SpacerGeometry {
     public static let minimumHidingLength: CGFloat = 500
 
     /// Width of the separator when the group is open.
-    /// Width of the separator when the group is open.
     ///
     /// Deliberately hairline. The separator exists to be inflated, not to be
     /// looked at: the slime sitting immediately to its right is the one icon
@@ -30,7 +29,13 @@ public enum SpacerGeometry {
     /// Deliberately a comparison and not an equality check: the hiding length
     /// gets recomputed while collapsed (display added, resolution changed) and
     /// the collapsed state has to survive that.
-    public static let collapsedThreshold: CGFloat = 20
+    ///
+    /// It has to clear every width the separator legitimately takes while
+    /// *open*, which now includes the wider boundary shown during arranging.
+    /// At 20 that boundary read as collapsed, so turning the boundary off left
+    /// the separator stuck wide. Sitting far below `minimumHidingLength` keeps
+    /// a real collapse unambiguous.
+    public static let collapsedThreshold: CGFloat = 100
 
     /// Length that pushes everything to the separator's left off screen.
     public static func hidingLength(widestScreenWidth: CGFloat) -> CGFloat {

@@ -43,8 +43,12 @@ struct SpacerGeometryTests {
 
     @Test("접힘 임계값은 배타적")
     func collapsedThresholdIsExclusive() {
-        #expect(SpacerGeometry.isCollapsed(length: 20) == false)
-        #expect(SpacerGeometry.isCollapsed(length: 20.5))
+        // Relative to the threshold rather than a literal: the threshold has
+        // to move whenever the separator gains a new open width, and a test
+        // pinned to the old number fails for the wrong reason.
+        let threshold = SpacerGeometry.collapsedThreshold
+        #expect(SpacerGeometry.isCollapsed(length: threshold) == false)
+        #expect(SpacerGeometry.isCollapsed(length: threshold + 0.5))
     }
 
     @Test("메뉴바 밴드는 visibleFrame 위에서 화면 top까지")

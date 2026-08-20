@@ -56,6 +56,11 @@ public final class MenuBarEngine: ObservableObject {
         )
     }
 
+    /// Reveals the drag boundary while the user is arranging icons.
+    public func setBoundaryVisible(_ visible: Bool) {
+        strategy?.setBoundaryVisible(visible)
+    }
+
     public func stop() {
         strategy?.deactivate()
         strategy = nil

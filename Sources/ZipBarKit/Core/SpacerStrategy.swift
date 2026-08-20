@@ -115,6 +115,46 @@ public final class SpacerStrategy: HidingStrategy {
 
     // MARK: - Collapse state
 
+    /// Width of the separator while the user is arranging icons. Wide enough
+    /// to aim a drag at, and marked so it reads as a boundary rather than as
+    /// a second control.
+    static let boundaryLength: CGFloat = 22
+
+    private var boundaryVisible = false
+
+    /// Current width of a group's separator. Exposed for tests, which
+    /// otherwise cannot tell a hidden boundary from a missing one.
+    func separatorLength(for groupID: MenuBarGroup.ID) -> CGFloat? {
+        items[groupID]?.separator.length
+    }
+
+    public func setBoundaryVisible(_ visible: Bool) {
+        boundaryVisible = visible
+        for (id, entry) in items {
+            guard let group = layout.group(id: id) else { continue }
+            // An inflated separator is doing its real job; leave it alone.
+            guard !SpacerGeometry.isCollapsed(length: entry.separator.length) else { continue }
+            entry.separator.length = visible ? Self.boundaryLength : SpacerGeometry.expandedLength
+            applyBoundaryGlyph(entry.separator, group: group, visible: visible)
+        }
+    }
+
+    private func applyBoundaryGlyph(_ item: NSStatusItem, group: MenuBarGroup, visible: Bool) {
+        guard let button = item.button else { return }
+        if visible {
+            StatusItemGlyph.apply(
+                to: button,
+                symbolName: "chevron.compact.left",
+                fallbackText: "|",
+                accessibilityDescription: "\(group.name) 경계"
+            )
+            button.toolTip = "\(group.name) 경계 — 숨길 아이콘을 이 왼쪽으로 ⌘드래그하세요"
+        } else {
+            button.image = nil
+            button.title = ""
+        }
+    }
+
     public func isCollapsed(_ groupID: MenuBarGroup.ID) -> Bool {
         guard let entry = items[groupID] else { return false }
         return SpacerGeometry.isCollapsed(length: entry.separator.length)
@@ -124,7 +164,8 @@ public final class SpacerStrategy: HidingStrategy {
         guard let entry = items[groupID], let group = layout.group(id: groupID) else { return }
         entry.separator.length = collapsed
             ? SpacerGeometry.hidingLength(widestScreenWidth: Self.widestScreenWidth())
-            : SpacerGeometry.expandedLength
+            : (boundaryVisible ? Self.boundaryLength : SpacerGeometry.expandedLength)
+        applyBoundaryGlyph(entry.separator, group: group, visible: !collapsed && boundaryVisible)
         collapseDidChange?(groupID, collapsed)
 
         autoHideTimers.removeValue(forKey: groupID)?.invalidate()
@@ -188,6 +229,7 @@ public final class SpacerStrategy: HidingStrategy {
         separator.button?.toolTip = "\(group.name) 경계 — 숨길 아이콘을 슬라임 왼쪽으로 ⌘드래그하세요"
 
         items[group.id] = GroupItems(separator: separator)
+        applyBoundaryGlyph(separator, group: group, visible: boundaryVisible)
 
         // Start expanded, never collapsed.
         //

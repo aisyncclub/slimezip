@@ -38,12 +38,24 @@ public protocol HidingStrategy: AnyObject {
     func setCollapsed(_ collapsed: Bool, for groupID: MenuBarGroup.ID)
     func toggle(_ groupID: MenuBarGroup.ID)
 
+    /// Show or hide the line icons are dragged across.
+    ///
+    /// The boundary is invisible in normal use so the slime is the only thing
+    /// of ours in the bar. That is the wrong trade while the user is actually
+    /// arranging icons: they cannot aim at a line they cannot see, and other
+    /// apps' icons can sit between the boundary and the slime, which makes
+    /// "left of the slime" the wrong rule at exactly the wrong moment.
+    func setBoundaryVisible(_ visible: Bool)
+
     /// Fires whenever a group's collapse state changes, from any cause
     /// (user click, auto-hide timer, hotkey).
     var collapseDidChange: ((MenuBarGroup.ID, Bool) -> Void)? { get set }
 }
 
 public extension HidingStrategy {
+    /// Backends that displace nothing have no boundary to show.
+    func setBoundaryVisible(_ visible: Bool) {}
+
     func toggle(_ groupID: MenuBarGroup.ID) {
         setCollapsed(!isCollapsed(groupID), for: groupID)
     }
