@@ -56,17 +56,41 @@ public final class MenuBarEngine: ObservableObject {
         )
     }
 
-    /// Where the boundary sits, as a distance from the right edge of the
-    /// screen — the same units macOS stores every status item's position in.
+    /// One group's separator and where it sits.
+    public struct Boundary: Sendable {
+        public let groupID: MenuBarGroup.ID
+        public let name: String
+        public let behavior: MenuBarGroup.Behavior
+        /// Distance from the right edge of the screen — the same units macOS
+        /// stores every status item's position in, so another app's stored
+        /// position can be compared against it directly.
+        public let position: Double
+    }
+
+    /// Every boundary, leftmost first.
     ///
-    /// Read from our own saved position rather than measured from the live
-    /// item, because that is the number another app's stored position has to
-    /// be compared against for "left of the boundary" to mean anything.
+    /// Sorted by actual position rather than by the order groups appear in
+    /// the layout: the user can ⌘-drag a separator past another one, and the
+    /// arrangement on screen is what decides which zone an icon falls into.
+    /// Reading stored positions rather than measuring live items keeps this
+    /// in the one coordinate system that comparisons are valid in.
+    public func boundaries() -> [Boundary] {
+        layout.groups.compactMap { group -> Boundary? in
+            let key = StatusItemPlacement.key(
+                for: SpacerStrategy.separatorAutosaveName(group.id))
+            guard let position = UserDefaults.standard.object(forKey: key) as? Double
+            else { return nil }
+            return Boundary(
+                groupID: group.id, name: group.name,
+                behavior: group.behavior, position: position)
+        }
+        .sorted { $0.position > $1.position }
+    }
+
+    /// The boundary icons are moved across when there is only one group —
+    /// the common case, and the one the icon list's single button uses.
     public func boundaryPosition() -> Double? {
-        guard let group = layout.groups.first else { return nil }
-        let key = StatusItemPlacement.key(
-            for: SpacerStrategy.separatorAutosaveName(group.id))
-        return UserDefaults.standard.object(forKey: key) as? Double
+        boundaries().last?.position
     }
 
     /// Reveals the drag boundary while the user is arranging icons.
@@ -134,8 +158,14 @@ public final class MenuBarEngine: ObservableObject {
     }
 
     /// Reveal everything the current backend is able to reveal.
+    /// Opens every group the user is allowed to open.
+    ///
+    /// An `alwaysHidden` group is excluded by name: it exists to hold icons
+    /// the user has decided never to look at, so a general "show everything"
+    /// must not drag them back out. Only `setCollapsed(false:)` aimed at that
+    /// group by id opens it.
     public func expandAll() {
-        for group in layout.groups {
+        for group in layout.groups where group.behavior != .alwaysHidden {
             strategy?.setCollapsed(false, for: group.id)
         }
         syncCollapseState()

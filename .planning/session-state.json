@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "created_at": "2026-08-17T05:38:49.895966+00:00",
-  "updated_at": "2026-08-20T14:43:29.081808+00:00",
+  "updated_at": "2026-08-20T14:51:20.338630+00:00",
   "session": {
     "id": "session_20260817_143849",
     "project_path": "/Users/firstandre/mac-saas-zipbar"
@@ -20,10 +20,10 @@
   },
   "analyzer": {
     "last_decision": {
-      "case": "ideation",
+      "case": "feature_impl",
       "context": "general",
-      "complexity": 0.002,
-      "confidence": 0.06
+      "complexity": 0.031,
+      "confidence": 0.217
     }
   },
   "orchestration": {
@@ -39,10 +39,10 @@
   "project_org": {
     "status": "draft",
     "current": {
-      "org_id": "org-7e7cf908",
-      "request_summary": "응 그렇게 해줘\n잘만들었는데 아이콘을 선택해서 넣고 빼고 할 수 있는 기능은 왜 자꾸 안돼",
+      "org_id": "org-7508e87c",
+      "request_summary": "목록 잘 나와. 숨기기되, 그리고 그룹기능이 되게끔 해봐",
       "domain": "general",
-      "complexity": 0.05,
+      "complexity": 0.031,
       "risk_level": "low",
       "teams": [],
       "global_blue_team": {
@@ -110,6 +110,39 @@
         "request_summary": "슬라임 이뻐 \n그리고 바의 슬라임이 살아 움직이는 형태느낌처럼 구현하고 싶은데",
         "domain": "development",
         "complexity": 0.043,
+        "risk_level": "low",
+        "teams": [],
+        "global_blue_team": {
+          "roles": [
+            "Global Blue Board"
+          ],
+          "focus": [
+            "팀 간 정렬",
+            "승인 누락",
+            "검증 완전성"
+          ],
+          "status": "pending"
+        },
+        "global_red_team": {
+          "roles": [
+            "Global Red Board"
+          ],
+          "focus": [
+            "승인 우회",
+            "일정 낙관",
+            "통합 실패 시나리오"
+          ],
+          "status": "pending"
+        },
+        "status": "draft",
+        "source_case": "feature_impl",
+        "kickoff_approval_required": true
+      },
+      {
+        "org_id": "org-7e7cf908",
+        "request_summary": "응 그렇게 해줘\n잘만들었는데 아이콘을 선택해서 넣고 빼고 할 수 있는 기능은 왜 자꾸 안돼",
+        "domain": "general",
+        "complexity": 0.05,
         "risk_level": "low",
         "teams": [],
         "global_blue_team": {

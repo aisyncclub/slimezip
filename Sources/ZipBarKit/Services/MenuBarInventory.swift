@@ -28,6 +28,10 @@ public final class MenuBarInventory: ObservableObject {
         public let isOurs: Bool
         /// Stable across launches, unlike `id`, which embeds a process id.
         public let preferenceKey: String
+        /// Distance from the right edge of its screen, in the same units as
+        /// `MenuBarEngine.Boundary.position`. nil when the item is not drawn.
+        /// This is what makes "which side of which separator" answerable.
+        public let position: Double?
     }
 
     /// An icon sitting somewhere the user did not ask it to be.
@@ -254,7 +258,8 @@ public final class MenuBarInventory: ObservableObject {
                 indexInApp: indexInApp,
                 presence: Self.classify(snapshot.frame, bands: bands),
                 isOurs: snapshot.bundleIdentifier == Bundle.main.bundleIdentifier,
-                preferenceKey: key
+                preferenceKey: key,
+                position: Self.position(of: snapshot.frame, bands: bands)
             )
         }
 
@@ -301,6 +306,61 @@ public final class MenuBarInventory: ObservableObject {
 
     /// Whether any hidden icon is flagged, which is what the slime shows.
     public var hasActivity: Bool { !activeIDs.isEmpty }
+
+    // MARK: - Zones
+
+    /// Boundaries as of the last refresh, leftmost first. Supplied by the
+    /// owner rather than read here, because the engine is what knows which
+    /// groups exist and where their separators are stored.
+    @Published public var boundaries: [MenuBarEngine.Boundary] = []
+
+    /// Which zone an icon sits in, or nil when macOS is not drawing it.
+    public func zone(of item: Item) -> MenuBarZone? {
+        MenuBarZoning.zone(for: item.position, boundaries: boundaries.map(\.position))
+    }
+
+    /// Movable icons in one zone, left to right as they appear in the bar.
+    public func items(in zone: MenuBarZone) -> [Item] {
+        items
+            .filter { !$0.isOurs && $0.presence != .notDrawn && self.zone(of: $0) == zone }
+            .sorted { ($0.position ?? 0) > ($1.position ?? 0) }
+    }
+
+    /// Sends an icon to a zone by name — the group feature's one action.
+    ///
+    /// Same mechanism as `move(_:to:boundaryPosition:)`, aimed at an arbitrary
+    /// zone instead of just the two sides of a single separator.
+    @discardableResult
+    public func move(_ item: Item, toZone zone: MenuBarZone) -> Bool {
+        guard canMove(item),
+              let bundle = item.bundleIdentifier,
+              let target = MenuBarZoning.targetPosition(
+                for: zone,
+                boundaries: boundaries.map(\.position),
+                clearance: MenuBarArranger.clearance)
+        else { return false }
+
+        let keys = arranger.positionKeys(for: bundle)
+        let key = keys.indices.contains(item.indexInApp) ? keys[item.indexInApp]
+            : (keys.first ?? "NSStatusItem Preferred Position Item-0")
+        let plan = MenuBarArranger.Plan(
+            bundleIdentifier: bundle, ownerName: item.ownerName, key: key,
+            currentPosition: arranger.storedPosition(for: bundle, key: key),
+            targetPosition: target,
+            side: zone == .visible ? .visible : .hidden)
+
+        guard case .some(let previous) = arranger.apply(plan) else { return false }
+
+        pendingStore.set(
+            PendingMoveStore.Record(
+                bundleIdentifier: bundle, positionKey: key,
+                previousValue: previous,
+                side: zone == .visible ? .visible : .hidden),
+            for: item.preferenceKey)
+        setDesired(zone == .visible ? .visible : .hidden, for: item)
+        objectWillChange.send()
+        return true
+    }
 
     /// Click an item where it sits. Works even on a hidden item, which is the
     /// point: a notification you cannot see is still one you may need to open.
@@ -353,6 +413,19 @@ public final class MenuBarInventory: ObservableObject {
         /// reports a dozen of these at zero size; they are not hidden icons
         /// and listing them as such buries the ones that are.
         case notDrawn
+    }
+
+    /// Converts an AX frame into a distance from the right edge of the screen
+    /// it sits on.
+    ///
+    /// Separator positions come from macOS's own stored preferences, which use
+    /// that measure; comparing raw x coordinates against them would be
+    /// comparing two different origins, and on a three-display Mac the answer
+    /// would be wrong on two of them.
+    nonisolated static func position(of frame: CGRect?, bands: [CGRect]) -> Double? {
+        guard let frame, let band = bands.first(where: { $0.intersects(frame) })
+        else { return nil }
+        return Double(band.maxX - frame.minX)
     }
 
     nonisolated static func classify(_ frame: CGRect?, bands: [CGRect]) -> Presence {
