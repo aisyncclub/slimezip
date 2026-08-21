@@ -1,51 +1,37 @@
 import AppKit
 
-/// ZipBar's menu bar glyph: a row of slimes, one per hidden icon.
+/// ZipBar's menu bar glyph: slimes squeezed into one fixed slot.
 ///
-/// A count you can read at a glance was the goal, and the shape of the menu
-/// bar decided how to get there. The bar constrains height — about 18pt of
-/// usable glyph — but not width, so a square container filling with slimes
-/// was measured and rejected: five slimes stacked inside 18pt leaves each one
-/// about six pixels, at which point one slime and three are the same smudge
-/// and the eyes are gone. Laid out in a row each slime keeps its full height,
-/// so both the count and the faces survive.
+/// The count is carried by how *crushed* the slimes look, not by how much
+/// room they take. One slime sits round and relaxed; five are wedged flat
+/// against each other in exactly the same footprint. An app whose whole
+/// purpose is reclaiming menu bar space cannot spend that space one slime at
+/// a time, so the glyph never grows — an earlier version laid the slimes out
+/// in a row and reached 80pt at eight hidden icons, which is wider than most
+/// of the icons it was hiding.
 ///
-/// Width is the price, and it is capped. Past `maxVisibleSlimes` the row
-/// stops growing and the slimes fatten instead: an app whose purpose is to
-/// reclaim menu bar space must not eat it a slime at a time.
+/// Each count is its own drawing rather than copies of one slime tiled
+/// together: jelly under pressure deforms where it touches its neighbours,
+/// and that contact is the whole reason the picture reads as "packed".
 public enum SlimeRenderer {
 
-    /// Drawn fullness stages, thinnest through fattest.
+    /// Drawn stages: one relaxed slime through five crushed together.
     public static let stageCount = 5
 
-    /// Most slimes ever drawn side by side.
-    public static let maxVisibleSlimes = 4
-
-    /// Hidden icons at which the row is considered completely stuffed.
-    public static let fullAt = 8
-
-    /// Gap between slimes, in points.
-    static let spacing: CGFloat = 1.5
-
-    /// How many slimes to draw for a given load.
+    /// Hidden icons at which the slot is considered completely packed.
     ///
-    /// Zero hidden icons still draws one: an empty bar should show a slime
-    /// waiting to be fed, not an empty space the user cannot click.
-    public static func slimeCount(forHiddenCount count: Int) -> Int {
-        max(1, min(count, maxVisibleSlimes))
-    }
+    /// Past this the picture cannot say any more — the slimes are already
+    /// flat against every wall — so the glyph stops changing rather than
+    /// pretending to distinguish nine from ninety.
+    public static let fullAt = 6
 
-    /// Which fullness stage each slime is drawn at.
+    /// Which drawing represents this load.
     ///
-    /// Below the cap the slimes stay slim and the *number* carries the count.
-    /// Above it the number is pinned, so fullness takes over as the signal.
+    /// Zero hidden icons still draws the single slime: an empty bar should
+    /// show one waiting to be fed, not a blank the user cannot find or click.
     public static func stage(forHiddenCount count: Int) -> Int {
         guard count > 0 else { return 1 }
-        guard count > maxVisibleSlimes else { return 2 }
-        let overflow = Double(count - maxVisibleSlimes)
-        let span = Double(max(1, fullAt - maxVisibleSlimes))
-        let progress = min(1, overflow / span)
-        return 2 + Int((progress * Double(stageCount - 2)).rounded())
+        return min(count, stageCount)
     }
 
     /// Limits on the deformation, as fractions of the resting size.
@@ -68,29 +54,30 @@ public enum SlimeRenderer {
         squash: CGFloat = 0,
         blinking: Bool = false
     ) -> NSImage? {
-        let count = slimeCount(forHiddenCount: hiddenCount)
-        guard let base = stageImage(stage(forHiddenCount: hiddenCount), blinking: blinking)
+        let index = stage(forHiddenCount: hiddenCount)
+        // Fall back to open eyes rather than to nothing. Returning nil here
+        // would drop the caller onto its symbol fallback for the length of a
+        // blink, so a missing closed-eye file would make the whole character
+        // flicker out several times a minute.
+        guard let base = stageImage(index, blinking: blinking)
+            ?? stageImage(index, blinking: false)
         else { return nil }
 
-        let body = row(of: base, count: count, squash: squash)
+        let body = deformed(base, squash: squash)
         return hasActivity ? badged(body) : body
     }
 
-    /// Lays `count` copies out in a row inside one padded canvas.
+    /// Applies squash and stretch inside a fixed canvas.
     ///
     /// The canvas is padded whether or not anything is deforming, so the item
     /// never changes width mid-animation and shoves its neighbours sideways.
-    static func row(of base: NSImage, count: Int, squash: CGFloat) -> NSImage {
+    static func deformed(_ base: NSImage, squash: CGFloat) -> NSImage {
         let normalised = max(-1, min(1, squash))
         let amount = normalised >= 0 ? normalised * maxSquash : normalised * maxStretch
 
-        let cell = NSSize(
+        let canvas = NSSize(
             width: base.size.width * (1 + maxSquash),
             height: base.size.height * (1 + maxSquash))
-        let canvas = NSSize(
-            width: cell.width * CGFloat(count) + spacing * CGFloat(count - 1),
-            height: cell.height)
-
         let drawn = NSSize(
             width: base.size.width * (1 + amount),
             height: base.size.height * (1 - amount))
@@ -101,14 +88,11 @@ public enum SlimeRenderer {
         let result = NSImage(size: canvas)
         result.lockFocusFlipped(false)
         NSGraphicsContext.current?.imageInterpolation = .high
-        for index in 0..<count {
-            let originX = CGFloat(index) * (cell.width + spacing)
-            base.draw(in: NSRect(
-                x: originX + (cell.width - drawn.width) / 2,
-                y: floor,
-                width: drawn.width,
-                height: drawn.height))
-        }
+        base.draw(in: NSRect(
+            x: (canvas.width - drawn.width) / 2,
+            y: floor,
+            width: drawn.width,
+            height: drawn.height))
         result.unlockFocus()
         result.isTemplate = false
         return result

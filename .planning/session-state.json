@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "created_at": "2026-08-17T05:38:49.895966+00:00",
-  "updated_at": "2026-08-20T14:51:20.338630+00:00",
+  "updated_at": "2026-08-21T11:13:46.163673+00:00",
   "session": {
     "id": "session_20260817_143849",
     "project_path": "/Users/firstandre/mac-saas-zipbar"
@@ -20,10 +20,10 @@
   },
   "analyzer": {
     "last_decision": {
-      "case": "feature_impl",
+      "case": "ideation",
       "context": "general",
-      "complexity": 0.031,
-      "confidence": 0.217
+      "complexity": 0.053,
+      "confidence": 0.06
     }
   },
   "orchestration": {
