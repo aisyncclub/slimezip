@@ -20,6 +20,13 @@ public struct PendingMoveStore {
         public let positionKey: String
         /// What was there before. nil means the app had never stored one.
         public let previousValue: Double?
+        /// Where the icon should end up.
+        ///
+        /// Kept rather than recomputed because the write has to happen twice:
+        /// once when the user asks, and again after the owning app has quit.
+        /// Some apps save their live position on the way out and clobber ours,
+        /// so the value written before the quit is not the one that survives.
+        public let targetValue: Double
         /// Which side of the boundary the move points the icon at.
         public let side: Side
 
@@ -59,6 +66,7 @@ public struct PendingMoveStore {
                 bundleIdentifier: record.bundleIdentifier,
                 positionKey: record.positionKey,
                 previousValue: existing.previousValue,
+                targetValue: record.targetValue,
                 side: record.side
             )
         } else {

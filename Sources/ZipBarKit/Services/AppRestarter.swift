@@ -39,8 +39,16 @@ public struct AppRestarter {
     /// Uses `terminate()` rather than `forceTerminate()` so an app with
     /// unsaved work gets to put up its own dialog and refuse. A menu bar
     /// tidier has no business discarding someone's document.
+    /// - Parameter beforeRelaunch: run once the old process is gone and before
+    ///   the new one starts. That gap is the only place a stored position can
+    ///   be written safely: apps that persist their own position do it on the
+    ///   way out, so anything written earlier is overwritten by the quit.
     @MainActor
-    public func restart(_ bundleIdentifier: String, completion: @escaping (Outcome) -> Void) {
+    public func restart(
+        _ bundleIdentifier: String,
+        beforeRelaunch: @escaping () -> Void = {},
+        completion: @escaping (Outcome) -> Void
+    ) {
         let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier)
         guard let app = running.first, let url = app.bundleURL else {
             completion(.notRunning)
@@ -53,6 +61,8 @@ public struct AppRestarter {
                 completion(.refusedToQuit)
                 return
             }
+            beforeRelaunch()
+
             let configuration = NSWorkspace.OpenConfiguration()
             // A menu bar agent coming back should not steal focus.
             configuration.activates = false

@@ -45,7 +45,14 @@ public struct MenuBarArranger {
     private let defaultsFor: @Sendable (String) -> UserDefaults?
 
     public init(
-        defaultsFor: @escaping @Sendable (String) -> UserDefaults? = { UserDefaults(suiteName: $0) }
+        defaultsFor: @escaping @Sendable (String) -> UserDefaults? = { bundleIdentifier in
+            // Our own domain is already `standard`; asking for it as a suite
+            // returns nothing useful and makes macOS log a complaint on every
+            // sweep. ZipBar's own items are never moved through here anyway.
+            guard bundleIdentifier != Bundle.main.bundleIdentifier
+            else { return .standard }
+            return UserDefaults(suiteName: bundleIdentifier)
+        }
     ) {
         self.defaultsFor = defaultsFor
     }
@@ -120,6 +127,11 @@ public struct MenuBarArranger {
         let previous = defaults.object(forKey: plan.key) as? Double
         defaults.set(plan.targetPosition, forKey: plan.key)
         return .some(previous)
+    }
+
+    /// Writes a position directly, for re-applying a plan at a later moment.
+    public func write(_ position: Double, to key: String, in bundleIdentifier: String) {
+        defaultsFor(bundleIdentifier)?.set(position, forKey: key)
     }
 
     /// Puts a previous value back, or removes the key when there was none.

@@ -32,6 +32,10 @@ public final class MenuBarInventory: ObservableObject {
         /// `MenuBarEngine.Boundary.position`. nil when the item is not drawn.
         /// This is what makes "which side of which separator" answerable.
         public let position: Double?
+        /// The position macOS has on file for this icon, read from the owning
+        /// app's own preferences. Survives being pushed off-screen, which the
+        /// live frame does not.
+        public let storedPosition: Double?
     }
 
     /// An icon sitting somewhere the user did not ask it to be.
@@ -124,6 +128,7 @@ public final class MenuBarInventory: ObservableObject {
                 bundleIdentifier: bundle,
                 positionKey: plan.key,
                 previousValue: previous,
+                targetValue: plan.targetPosition,
                 side: side == .hidden ? .hidden : .visible),
             for: item.preferenceKey)
         // The stated preference follows the move, so the icon does not
@@ -170,10 +175,20 @@ public final class MenuBarInventory: ObservableObject {
             completion(.notRunning)
             return
         }
-        restarter.restart(bundle) { [weak self] outcome in
+        let record = pendingStore.record(for: item.preferenceKey)
+        restarter.restart(bundle, beforeRelaunch: { [weak self] in
+            // Written here, after the app has exited, because some apps save
+            // their live position on the way out and overwrite ours. Outlook
+            // does; Magnet does not — measured both ways. Writing in the gap
+            // between quit and launch is the only moment that holds for both.
+            guard let self, let record else { return }
+            self.arranger.write(record.targetValue,
+                                to: record.positionKey,
+                                in: record.bundleIdentifier)
+        }, completion: { [weak self] outcome in
             if outcome == .restarted { self?.refresh() }
             completion(outcome)
-        }
+        })
     }
 
     // MARK: - Preferences
@@ -202,6 +217,16 @@ public final class MenuBarInventory: ObservableObject {
     }
 
     public var hidden: [Item] { items.filter { $0.presence == .hidden && !$0.isOurs } }
+
+    /// Icons actually inside one of our groups.
+    ///
+    /// Distinct from `hidden`, which is every icon macOS is not currently
+    /// drawing in a bar — including ones parked for reasons that have nothing
+    /// to do with us. Counting those made the slime look stuffed while the
+    /// groups were empty, claiming credit for other apps' business.
+    public var held: [Item] {
+        items.filter { !$0.isOurs && zone(of: $0)?.groupIndex != nil }
+    }
     public var visible: [Item] { items.filter { $0.presence == .visible && !$0.isOurs } }
     /// Published but undrawn — surfaced in diagnostics, not in the icon list.
     public var notDrawn: [Item] { items.filter { $0.presence == .notDrawn && !$0.isOurs } }
@@ -259,7 +284,15 @@ public final class MenuBarInventory: ObservableObject {
                 presence: Self.classify(snapshot.frame, bands: bands),
                 isOurs: snapshot.bundleIdentifier == Bundle.main.bundleIdentifier,
                 preferenceKey: key,
-                position: Self.position(of: snapshot.frame, bands: bands)
+                position: Self.position(of: snapshot.frame, bands: bands),
+                storedPosition: snapshot.bundleIdentifier.flatMap { bundle in
+                    let keys = arranger.positionKeys(for: bundle)
+                    let positionKey = keys.indices.contains(indexInApp)
+                        ? keys[indexInApp] : keys.first
+                    return positionKey.flatMap {
+                        arranger.storedPosition(for: bundle, key: $0)
+                    }
+                }
             )
         }
 
@@ -314,9 +347,24 @@ public final class MenuBarInventory: ObservableObject {
     /// groups exist and where their separators are stored.
     @Published public var boundaries: [MenuBarEngine.Boundary] = []
 
-    /// Which zone an icon sits in, or nil when macOS is not drawing it.
+    /// Which zone an icon sits in, or nil when it cannot be placed.
+    ///
+    /// On-screen icons are read from where they actually are. Hidden ones
+    /// cannot be: separators nest, so collapsing the outer group sweeps the
+    /// inner group's icons past the inner boundary too, and every hidden icon
+    /// piles into the leftmost zone regardless of which group holds it. For
+    /// those the stored position answers instead — it is what the icon will
+    /// return to, and it does not move when the icon is shoved off-screen.
+    ///
+    /// The stored value can lag a ⌘-drag until the owning app next saves, so
+    /// it is only trusted where the live frame has nothing to say.
     public func zone(of item: Item) -> MenuBarZone? {
-        MenuBarZoning.zone(for: item.position, boundaries: boundaries.map(\.position))
+        let positions = boundaries.map(\.position)
+        if item.presence == .visible {
+            return MenuBarZoning.zone(for: item.position, boundaries: positions)
+        }
+        return MenuBarZoning.zone(for: item.storedPosition, boundaries: positions)
+            ?? MenuBarZoning.zone(for: item.position, boundaries: positions)
     }
 
     /// Movable icons in one zone, left to right as they appear in the bar.
@@ -355,6 +403,7 @@ public final class MenuBarInventory: ObservableObject {
             PendingMoveStore.Record(
                 bundleIdentifier: bundle, positionKey: key,
                 previousValue: previous,
+                targetValue: target,
                 side: zone == .visible ? .visible : .hidden),
             for: item.preferenceKey)
         setDesired(zone == .visible ? .visible : .hidden, for: item)
@@ -423,8 +472,17 @@ public final class MenuBarInventory: ObservableObject {
     /// comparing two different origins, and on a three-display Mac the answer
     /// would be wrong on two of them.
     nonisolated static func position(of frame: CGRect?, bands: [CGRect]) -> Double? {
-        guard let frame, let band = bands.first(where: { $0.intersects(frame) })
-        else { return nil }
+        guard let frame else { return nil }
+        // Matched by vertical overlap alone, never by full intersection.
+        // Hiding an icon *means* shoving it off the side of the display, so
+        // requiring it to still overlap a bar horizontally refused to place
+        // exactly the icons the group is holding — every collapsed group read
+        // as empty. Pushed far left the x goes hugely negative, which turns
+        // into a hugely positive distance from the right edge, and that is
+        // precisely "deep inside the leftmost zone".
+        guard let band = bands.first(where: {
+            frame.minY < $0.maxY && frame.maxY > $0.minY
+        }) else { return nil }
         return Double(band.maxX - frame.minX)
     }
 

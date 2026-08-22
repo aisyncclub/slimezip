@@ -494,7 +494,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// from the app having failed to launch.
     private func refreshSlime() {
         guard let button = controlItem?.button else { return }
-        let hidden = inventory.hidden.count
+        let hidden = inventory.held.count
 
         if let image = SlimeRenderer.image(
             hiddenCount: hidden,

@@ -17,12 +17,15 @@ struct PendingMoveTests {
     }
 
     private func record(
-        side: PendingMoveStore.Record.Side = .hidden, previous: Double? = 360
+        side: PendingMoveStore.Record.Side = .hidden,
+        previous: Double? = 360,
+        target: Double = 641
     ) -> PendingMoveStore.Record {
         PendingMoveStore.Record(
             bundleIdentifier: "com.example.app",
             positionKey: "NSStatusItem Preferred Position Item-0",
             previousValue: previous,
+            targetValue: target,
             side: side)
     }
 
@@ -50,12 +53,23 @@ struct PendingMoveTests {
         // Hide, then change your mind to visible before restarting: undo must
         // restore what the app originally had, not our own first rewrite.
         let store = store(#function)
-        store.set(record(side: .hidden, previous: 360), for: "a#0")
-        store.set(record(side: .visible, previous: 762), for: "a#0")
+        store.set(record(side: .hidden, previous: 360, target: 641), for: "a#0")
+        store.set(record(side: .visible, previous: 762, target: 561), for: "a#0")
 
         let merged = store.record(for: "a#0")
         #expect(merged?.side == .visible, "방향은 최신 결정을 따른다")
+        #expect(merged?.targetValue == 561, "목표는 최신 결정을 따른다")
         #expect(merged?.previousValue == 360, "되돌릴 값은 최초 원본이어야 한다")
+    }
+
+    @Test("목표 위치가 보존된다")
+    func keepsTargetForReapplication() {
+        // The write has to happen twice — once on request, once after the
+        // owning app quits, because some apps save their live position on the
+        // way out and overwrite ours. Losing the target loses the second write.
+        let store = store(#function)
+        store.set(record(target: 681), for: "a#0")
+        #expect(store.record(for: "a#0")?.targetValue == 681)
     }
 
     @Test("제거하면 사라진다")
