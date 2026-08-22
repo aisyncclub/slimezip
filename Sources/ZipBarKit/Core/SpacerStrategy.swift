@@ -160,12 +160,13 @@ public final class SpacerStrategy: HidingStrategy {
         return SpacerGeometry.isCollapsed(length: entry.separator.length)
     }
 
-    public func setCollapsed(_ collapsed: Bool, for groupID: MenuBarGroup.ID) {
+    public func setCollapsed(_ collapsed: Bool, for groupID: MenuBarGroup.ID, force: Bool = false) {
         guard let entry = items[groupID], let group = layout.group(id: groupID) else { return }
         // Defence in depth. `expandAll` already skips these, but any future
         // caller that opens groups in bulk would otherwise silently empty the
-        // one place the user put icons to stop seeing them.
-        if collapsed == false, group.behavior == .alwaysHidden { return }
+        // one place the user put icons to stop seeing them. `force` is the
+        // deliberate way in — see `MenuBarEngine.revealAll`.
+        if collapsed == false, group.behavior == .alwaysHidden, !force { return }
         entry.separator.length = collapsed
             ? SpacerGeometry.hidingLength(widestScreenWidth: Self.widestScreenWidth())
             : (boundaryVisible ? Self.boundaryLength : SpacerGeometry.expandedLength)

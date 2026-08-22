@@ -11,6 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private var inventoryTimer: Timer?
     private let animator = SlimeAnimator()
+    private var quickPanel: NSPopover?
+    private var dismissMonitor: Any?
     /// Current deformation and eye state, driven by the animator.
     private var slimeSquash: CGFloat = 0
     private var slimeBlinking = false
@@ -210,6 +212,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 self.renderSettingsPreview(to: out)
                 NSApp.terminate(nil)
+            }
+            return
+        }
+
+        // Opens the quick panel directly, to tell a broken popover apart from
+        // a click that never reaches the handler.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_PANEL"] == "1" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.toggleQuickPanel()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    let shown = self.quickPanel?.isShown ?? false
+                    let windows = NSApp.windows.count
+                    FileHandle.standardError.write(Data(
+                        "popoverShown=\(shown) windows=\(windows) active=\(NSApp.isActive)\n".utf8))
+                    NSApp.terminate(nil)
+                }
             }
             return
         }
@@ -519,18 +537,105 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func slimeClicked() {
         // No current event means the click came through accessibility
-        // (VoiceOver, or automation): treat it as the primary action. The
-        // old guard returned silently here, which made the slime a button
-        // that did nothing for anyone not using a physical mouse.
+        // (VoiceOver, or automation): treat it as the primary action, which
+        // for those callers is the toggle rather than a popover they cannot
+        // easily read.
         guard let event = NSApp.currentEvent else {
             toggleAll()
             return
         }
-        let wantsMenu = event.type == .rightMouseUp || event.modifierFlags.contains(.control)
-        if wantsMenu {
+        if event.type == .rightMouseUp || event.modifierFlags.contains(.control) {
             showControlMenu()
-        } else {
+        } else if event.modifierFlags.contains(.option) {
+            // Power-user shortcut past the panel, for when all you want is to
+            // peek and put it back.
             toggleAll()
+        } else {
+            toggleQuickPanel()
+        }
+    }
+
+    /// Opens the panel that lets icons be put in and taken out on the spot.
+    ///
+    /// A plain click used to only collapse and expand, which answered "let me
+    /// peek" but not "let me change what is in there" — that meant opening
+    /// settings, finding the row, clicking again. Choosing what to hide is the
+    /// app's entire purpose, so it belongs one click from the bar.
+    private func toggleQuickPanel() {
+        guard let button = controlItem?.button else { return }
+        if let panel = quickPanel, panel.isShown {
+            panel.performClose(nil)
+            return
+        }
+
+        refreshInventory()
+        let content = QuickPanelView(
+            inventory: inventory,
+            engine: engine,
+            onOpenSettings: { [weak self] in
+                self?.quickPanel?.performClose(nil)
+                self?.showSettings(selecting: .icons)
+            },
+            onToggle: { [weak self] in self?.toggleAll() },
+            onRevealAll: { [weak self] in
+                guard let self else { return }
+                self.engine.revealAll()
+                self.inventory.clearActivity()
+                self.animator.play(.jiggle)
+                self.refreshInventory()
+            },
+            onRestart: { [weak self] items in
+                self?.quickPanel?.performClose(nil)
+                self?.restartSequentially(items)
+            })
+
+        let popover = NSPopover()
+        // Not `.transient`. That behaviour closes the popover on the next
+        // click anywhere — including, for an accessory app, the very
+        // mouse-up that opened it, so the panel appeared and vanished in the
+        // same gesture. Closing is handled below instead, on a click that
+        // actually lands outside.
+        popover.behavior = .applicationDefined
+        popover.animates = true
+        popover.contentViewController = NSHostingController(rootView: content)
+
+        // Activate first: an accessory app is never active on its own, and a
+        // popover belonging to an inactive app cannot take keyboard input.
+        NSApp.activate(ignoringOtherApps: true)
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        quickPanel = popover
+        watchForDismissal()
+
+    }
+
+    /// Closes the panel when the user clicks away from it.
+    ///
+    /// Replaces what `.transient` would have done, minus its habit of
+    /// counting the opening click itself as a dismissal.
+    private func watchForDismissal() {
+        dismissMonitor.map(NSEvent.removeMonitor)
+        dismissMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown]
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let panel = self.quickPanel, panel.isShown else { return }
+                panel.performClose(nil)
+                self.dismissMonitor.map(NSEvent.removeMonitor)
+                self.dismissMonitor = nil
+            }
+        }
+    }
+
+    /// Restarts apps one at a time. Sequential on purpose: quitting half the
+    /// menu bar at once turns the bar into a slot machine, and a single
+    /// failure is easier to attribute when they go down one by one.
+    private func restartSequentially(_ items: [MenuBarInventory.Item]) {
+        guard let item = items.first else {
+            refreshInventory()
+            return
+        }
+        inventory.restart(item) { [weak self] _ in
+            self?.restartSequentially(Array(items.dropFirst()))
         }
     }
 

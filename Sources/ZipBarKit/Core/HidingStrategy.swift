@@ -35,7 +35,10 @@ public protocol HidingStrategy: AnyObject {
     func apply(layout: MenuBarLayout)
 
     func isCollapsed(_ groupID: MenuBarGroup.ID) -> Bool
-    func setCollapsed(_ collapsed: Bool, for groupID: MenuBarGroup.ID)
+    /// - Parameter force: opens an always-hidden group too. Off by default so
+    ///   that bulk callers cannot empty the one place a user put icons to stop
+    ///   seeing them; on only for the deliberate "show me everything" gesture.
+    func setCollapsed(_ collapsed: Bool, for groupID: MenuBarGroup.ID, force: Bool)
     func toggle(_ groupID: MenuBarGroup.ID)
 
     /// Show or hide the line icons are dragged across.
@@ -53,6 +56,10 @@ public protocol HidingStrategy: AnyObject {
 }
 
 public extension HidingStrategy {
+    func setCollapsed(_ collapsed: Bool, for groupID: MenuBarGroup.ID) {
+        setCollapsed(collapsed, for: groupID, force: false)
+    }
+
     /// Backends that displace nothing have no boundary to show.
     func setBoundaryVisible(_ visible: Bool) {}
 

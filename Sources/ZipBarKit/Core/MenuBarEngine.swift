@@ -171,6 +171,21 @@ public final class MenuBarEngine: ObservableObject {
         syncCollapseState()
     }
 
+    /// Opens every group, including the always-hidden one.
+    ///
+    /// The deliberate exception to `expandAll`. A group set to always-hidden
+    /// must not open by accident — that is the whole reason to put an icon
+    /// there — but "never, under any circumstance" is a different promise, and
+    /// a worse one: it makes the icons unreachable without dismantling the
+    /// group. This is the way in, and it is only ever reached by an explicit
+    /// gesture the user has to know about.
+    public func revealAll() {
+        for group in layout.groups {
+            strategy?.setCollapsed(false, for: group.id, force: true)
+        }
+        syncCollapseState()
+    }
+
     public func collapseAll() {
         for group in layout.groups {
             strategy?.setCollapsed(true, for: group.id)
