@@ -347,6 +347,23 @@ public final class MenuBarInventory: ObservableObject {
     /// groups exist and where their separators are stored.
     @Published public var boundaries: [MenuBarEngine.Boundary] = []
 
+    /// Indices of the groups that are shut right now, supplied by the owner
+    /// because the engine is what tracks collapse state.
+    @Published public var collapsedGroups: Set<Int> = []
+
+    /// Icons the slime is concealing at this moment.
+    ///
+    /// Distinct from `held`, which is everything the groups own whether or not
+    /// they are shut. An open group is holding nothing — it has let its icons
+    /// out onto the bar — so a slime drawn from `held` stayed stuffed while
+    /// the icons it was supposedly holding sat in plain sight beside it.
+    public var concealed: [Item] {
+        items.filter { item in
+            guard !item.isOurs, let index = zone(of: item)?.groupIndex else { return false }
+            return collapsedGroups.contains(index)
+        }
+    }
+
     /// Which zone an icon sits in, or nil when it cannot be placed.
     ///
     /// On-screen icons are read from where they actually are. Hidden ones

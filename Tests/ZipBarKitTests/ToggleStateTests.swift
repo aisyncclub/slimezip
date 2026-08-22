@@ -75,3 +75,43 @@ struct ToggleStateTests {
         #expect(strategy.isCollapsed(always.id) == false)
     }
 }
+
+/// The slime is a picture of what is hidden *right now*, not of what the
+/// groups own. An open group is holding nothing — it has let its icons out
+/// onto the bar — and a slime that stayed stuffed while those icons sat in
+/// plain sight beside it was telling a visible lie.
+@Suite("슬라임이 무엇을 세는가")
+struct ConcealedCountTests {
+
+    @Test("접힌 그룹의 아이콘만 센다")
+    func countsOnlyCollapsedGroups() {
+        // Mirrors MenuBarInventory.concealed without needing a live bar.
+        func concealed(zones: [Int?], collapsed: Set<Int>) -> Int {
+            zones.filter { $0.map(collapsed.contains) ?? false }.count
+        }
+        // Three icons in group 0, one outside, group 0 shut.
+        #expect(concealed(zones: [0, 0, 0, nil], collapsed: [0]) == 3)
+        // Same arrangement, group open: holding nothing.
+        #expect(concealed(zones: [0, 0, 0, nil], collapsed: []) == 0)
+    }
+
+    @Test("여러 그룹 중 접힌 것만 반영된다")
+    func mixedGroupsCountSeparately() {
+        func concealed(zones: [Int?], collapsed: Set<Int>) -> Int {
+            zones.filter { $0.map(collapsed.contains) ?? false }.count
+        }
+        // Group 0 holds two and is shut; group 1 holds two and is open.
+        #expect(concealed(zones: [0, 0, 1, 1], collapsed: [0]) == 2)
+        #expect(concealed(zones: [0, 0, 1, 1], collapsed: [0, 1]) == 4)
+    }
+
+    @Test("숨긴 것이 없으면 가장 홀쭉한 단계")
+    func nothingConcealedDrawsTheThinnestSlime() {
+        #expect(SlimeRenderer.stage(forHiddenCount: 0) == 1)
+    }
+
+    @Test("가득 차면 가장 눌린 단계")
+    func fullConcealmentDrawsTheMostCrushed() {
+        #expect(SlimeRenderer.stage(forHiddenCount: 20) == SlimeRenderer.stageCount)
+    }
+}

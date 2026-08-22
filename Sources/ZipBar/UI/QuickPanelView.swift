@@ -59,10 +59,9 @@ struct QuickPanelView: View {
             footer
         }
         .frame(width: 300)
-        .onAppear {
-            inventory.boundaries = engine.boundaries()
-            inventory.refresh()
-        }
+        // No refresh here: the app populates boundaries and collapse state
+        // together before showing the panel, and re-reading only half of that
+        // from the view would put the two out of step.
     }
 
     // MARK: - Header
@@ -70,12 +69,16 @@ struct QuickPanelView: View {
     private var header: some View {
         HStack(spacing: 9) {
             SlimeDecor.Portrait(
-                stage: SlimeRenderer.stage(forHiddenCount: inventory.held.count),
+                stage: SlimeRenderer.stage(forHiddenCount: inventory.concealed.count),
                 height: 26)
             VStack(alignment: .leading, spacing: 0) {
+                // Follows the same reading as the slime beside it: an open
+                // group is holding nothing, however many icons it owns.
                 Text(inventory.held.isEmpty
                      ? "숨긴 아이콘 없음"
-                     : "\(inventory.held.count)개 물고 있음")
+                     : inventory.concealed.isEmpty
+                       ? "\(inventory.held.count)개 꺼내 둠"
+                       : "\(inventory.concealed.count)개 물고 있음")
                     .font(.headline)
                 Text(statusLine)
                     .font(.caption2)

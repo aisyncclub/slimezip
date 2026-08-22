@@ -232,6 +232,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Collapses and expands once, reporting the glyph each time — the
+        // claim "the slime deflates when you let the icons out" is about the
+        // drawing, so only the drawing can confirm it.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_DEFLATE"] == "1" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                var log: [String] = []
+                @MainActor func note(_ label: String) {
+                    let image = self.controlItem?.button?.image
+                    log.append("\(label): concealed=\(self.inventory.concealed.count) "
+                        + "held=\(self.inventory.held.count) "
+                        + "stage=\(SlimeRenderer.stage(forHiddenCount: self.inventory.concealed.count)) "
+                        + "glyph=\(image.map { "\(Int($0.size.width))x\(Int($0.size.height))" } ?? "nil")")
+                }
+                // Spaced out: each refresh sweeps every running app's AX tree,
+                // and chaining them synchronously starves the run loop that
+                // has to redraw the glyph in between.
+                @MainActor func step(_ index: Int) {
+                    switch index {
+                    case 0: self.engine.collapseAll(); self.refreshInventory(); note("접힘")
+                    case 1: self.engine.expandAll();  self.refreshInventory(); note("펼침")
+                    case 2: self.engine.collapseAll(); self.refreshInventory(); note("다시 접힘")
+                    default:
+                        FileHandle.standardError.write(Data((log.joined(separator: "\n") + "\n").utf8))
+                        NSApp.terminate(nil)
+                        return
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        MainActor.assumeIsolated { step(index + 1) }
+                    }
+                }
+                step(0)
+            }
+            return
+        }
+
         // First run: explain the ⌘-drag step, because with the spacer backend
         // nothing appears to happen until the user arranges their icons.
         if !UserDefaults.standard.bool(forKey: Self.onboardingShownKey) {
@@ -345,8 +380,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func renderSettingsPreview(to path: String) {
-        inventory.boundaries = engine.boundaries()
-        inventory.refresh()
+        refreshInventory()
 
         // ImageRenderer cannot draw List or ScrollView — it substitutes a
         // "not supported" placeholder — so the preview composes the pieces
@@ -496,7 +530,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hadActivity = inventory.hasActivity
         // Boundaries first: the sweep classifies every icon against them, so
         // refreshing with a stale set would file icons under the wrong group.
-        inventory.boundaries = engine.boundaries()
+        let boundaries = engine.boundaries()
+        inventory.boundaries = boundaries
+        // Which groups are shut decides what the slime is holding *now*, as
+        // opposed to what its groups own. Set here, in the one place the
+        // inventory is refreshed, so the two can never disagree.
+        inventory.collapsedGroups = Set(
+            boundaries.enumerated()
+                .filter { engine.collapseState[$0.element.groupID] == true }
+                .map(\.offset))
         inventory.refresh()
         // A hidden icon changed while the user was not looking: the slime
         // notices before the dot appears, which is what makes the dot feel
@@ -512,7 +554,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// from the app having failed to launch.
     private func refreshSlime() {
         guard let button = controlItem?.button else { return }
-        let hidden = inventory.held.count
+        // What the slime is holding *now*, not what its groups own. Letting the
+        // icons out should visibly deflate it — that is the whole point of the
+        // click.
+        let hidden = inventory.concealed.count
 
         if let image = SlimeRenderer.image(
             hiddenCount: hidden,
@@ -529,8 +574,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let collapsed = engine.layout.groups.contains { engine.collapseState[$0.id] == true }
+        let owned = inventory.held.count
         button.toolTip = hidden == 0
-            ? "ZipBar — 숨겨진 아이콘 없음"
+            ? (owned == 0 ? "ZipBar — 숨겨진 아이콘 없음" : "ZipBar — \(owned)개 꺼내 둠")
             : "ZipBar — \(hidden)개 숨김\(inventory.hasActivity ? " · 변화 있음" : "")"
         button.setAccessibilityLabel("ZipBar, \(hidden)개 숨김, \(collapsed ? "접힘" : "펼침")")
     }
