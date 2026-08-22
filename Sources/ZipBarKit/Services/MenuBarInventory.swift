@@ -428,6 +428,78 @@ public final class MenuBarInventory: ObservableObject {
         return true
     }
 
+    /// Swaps an icon with its neighbour inside the same zone.
+    ///
+    /// - Parameter towardLeft: true moves it further from the clock.
+    ///
+    /// Reordering is the same mechanism as moving between zones — write the
+    /// stored position, wait for the app to restart — so it inherits the
+    /// same caveat and the same pending record. macOS treats the position
+    /// as a hint and packs items together, so the result is "next to that
+    /// one", not a guaranteed pixel.
+    @discardableResult
+    public func reorder(_ item: Item, towardLeft: Bool) -> Bool {
+        guard canMove(item), let zone = zone(of: item) else { return false }
+        let siblings = items(in: zone)
+        guard let index = siblings.firstIndex(where: { $0.id == item.id }) else { return false }
+
+        // `items(in:)` is sorted left to right, so the neighbour to swap with
+        // is the previous entry when moving left.
+        let neighbourIndex = towardLeft ? index - 1 : index + 1
+        guard siblings.indices.contains(neighbourIndex) else { return false }
+        let neighbour = siblings[neighbourIndex]
+
+        guard let mine = positionKeyAndValue(for: item),
+              let theirs = positionKeyAndValue(for: neighbour) else { return false }
+
+        // An app that publishes more items than it stores positions for maps
+        // several of them onto the same key — Control Center does exactly
+        // this. Swapping a key with itself writes nothing and would report
+        // success, so the pair is refused instead.
+        guard !(mine.bundle == theirs.bundle && mine.key == theirs.key) else { return false }
+
+        // Swap the two stored positions outright rather than nudging by a
+        // step: a nudge can land on top of a third icon, while a swap keeps
+        // every other position untouched.
+        return write(theirs.value, to: mine, side: zone == .visible ? .visible : .hidden)
+            && write(mine.value, to: theirs, side: zone == .visible ? .visible : .hidden)
+    }
+
+    private struct PositionSlot {
+        let item: Item
+        let bundle: String
+        let key: String
+        let value: Double
+    }
+
+    private func positionKeyAndValue(for item: Item) -> PositionSlot? {
+        guard let bundle = item.bundleIdentifier else { return nil }
+        let keys = arranger.positionKeys(for: bundle)
+        let key = keys.indices.contains(item.indexInApp) ? keys[item.indexInApp]
+            : (keys.first ?? "NSStatusItem Preferred Position Item-0")
+        // Fall back to where it actually is when the app has never stored a
+        // position, so a first-time swap still has something to trade.
+        let value = arranger.storedPosition(for: bundle, key: key) ?? item.position ?? 0
+        return PositionSlot(item: item, bundle: bundle, key: key, value: value)
+    }
+
+    private func write(
+        _ value: Double, to slot: PositionSlot, side: PendingMoveStore.Record.Side
+    ) -> Bool {
+        let plan = MenuBarArranger.Plan(
+            bundleIdentifier: slot.bundle, ownerName: slot.item.ownerName, key: slot.key,
+            currentPosition: slot.value, targetPosition: value,
+            side: side == .hidden ? .hidden : .visible)
+        guard case .some(let previous) = arranger.apply(plan) else { return false }
+        pendingStore.set(
+            PendingMoveStore.Record(
+                bundleIdentifier: slot.bundle, positionKey: slot.key,
+                previousValue: previous, targetValue: value, side: side),
+            for: slot.item.preferenceKey)
+        objectWillChange.send()
+        return true
+    }
+
     /// Click an item where it sits. Works even on a hidden item, which is the
     /// point: a notification you cannot see is still one you may need to open.
     @discardableResult

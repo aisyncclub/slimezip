@@ -171,6 +171,69 @@ public final class MenuBarEngine: ObservableObject {
         syncCollapseState()
     }
 
+    /// Autosave names of everything ZipBar puts in the bar, ours to move.
+    public func ownAutosaveNames(controlName: String) -> [String] {
+        SpacerStrategy.autosaveNames(for: layout) + [controlName]
+    }
+
+    /// Where our items should sit after a nudge, or nil if nothing moves.
+    ///
+    /// Computed separately from applying it because the write has to land
+    /// in the gap after the old items are gone and before the new ones are
+    /// made. Removing a status item makes macOS clear its stored position,
+    /// so a value written first is simply erased — the same trap that made
+    /// Outlook overwrite a pending move on the way out.
+    public func plannedOwnPositions(by delta: Double, controlName: String) -> [(String, Double)]? {
+        let names = ownAutosaveNames(controlName: controlName)
+        let defaults = UserDefaults.standard
+        let current = names.map { name -> Double in
+            defaults.object(forKey: StatusItemPlacement.key(for: name)) as? Double ?? 0
+        }
+        let width = StatusItemPlacement.widestScreenWidth()
+        guard SelfPlacement.canShift(positions: current, by: delta,
+                                     widestScreenWidth: width) else { return nil }
+
+        let moved = SelfPlacement.shifted(positions: current, by: delta,
+                                          widestScreenWidth: width)
+        return Array(zip(names, moved))
+    }
+
+    /// Writes positions previously planned. Call only with our items removed.
+    public func applyOwnPositions(_ plan: [(String, Double)]) {
+        for (name, position) in plan {
+            UserDefaults.standard.set(position, forKey: StatusItemPlacement.key(for: name))
+        }
+    }
+
+    /// Removes the group items, leaving the bar without them.
+    public func teardownItems() {
+        strategy?.deactivate()
+        strategy = nil
+    }
+
+    /// Whether a nudge in this direction is available.
+    public func canShiftOwnItems(by delta: Double, controlName: String) -> Bool {
+        let defaults = UserDefaults.standard
+        let current = ownAutosaveNames(controlName: controlName).map { name -> Double in
+            defaults.object(forKey: StatusItemPlacement.key(for: name)) as? Double ?? 0
+        }
+        return SelfPlacement.canShift(positions: current, by: delta,
+                                      widestScreenWidth: StatusItemPlacement.widestScreenWidth())
+    }
+
+    /// Builds the group items again, picking up whatever positions are
+    /// stored right now.
+    public func buildItems(restoringCollapsed collapsed: [MenuBarGroup.ID]) {
+        start()
+        for id in collapsed { strategy?.setCollapsed(true, for: id) }
+        syncCollapseState()
+    }
+
+    /// Groups that are shut, so a rebuild can put them back the way they were.
+    public var collapsedGroupIDs: [MenuBarGroup.ID] {
+        layout.groups.filter { collapseState[$0.id] == true }.map(\.id)
+    }
+
     /// Whether the groups a click can actually open are currently shut.
     ///
     /// Always-hidden groups are excluded on purpose: they are shut by

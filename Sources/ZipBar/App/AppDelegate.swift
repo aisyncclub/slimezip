@@ -266,7 +266,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
-
+        // Shifts once after a delay and keeps running, so the move can be
+        // measured from outside with the accessibility API — the app's own
+        // view of its window frame proved unreliable for this.
+        if let raw = ProcessInfo.processInfo.environment["ZIPBAR_SHIFT_SELF"],
+           let steps = Double(raw) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                MainActor.assumeIsolated {
+                    self.moveSelf(by: SelfPlacement.step * steps)
+                    FileHandle.standardError.write(Data("shifted \(steps) steps\n".utf8))
+                }
+            }
+        }
         // First run: explain the ⌘-drag step, because with the spacer backend
         // nothing appears to happen until the user arranges their icons.
         if !UserDefaults.standard.bool(forKey: Self.onboardingShownKey) {
@@ -633,7 +644,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onRestart: { [weak self] items in
                 self?.quickPanel?.performClose(nil)
                 self?.restartSequentially(items)
-            })
+            },
+            onMoveSelf: { [weak self] delta in self?.moveSelf(by: delta) },
+            canMoveSelf: { [weak self] delta in self?.canMoveSelf(by: delta) ?? false })
 
         let popover = NSPopover()
         // Not `.transient`. That behaviour closes the popover on the next
@@ -683,6 +696,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         inventory.restart(item) { [weak self] _ in
             self?.restartSequentially(Array(items.dropFirst()))
         }
+    }
+
+    /// Slides ZipBar itself along the bar.
+    ///
+    /// Ours are the only items we can reposition without waiting for an app
+    /// to restart, because we are the app that creates them: shift the
+    /// stored positions, then build them again.
+    ///
+    /// - Parameter delta: positive moves left, negative moves right.
+    func moveSelf(by delta: Double) {
+        guard let plan = engine.plannedOwnPositions(
+            by: delta, controlName: Self.controlAutosaveName) else { return }
+
+        let collapsed = engine.collapsedGroupIDs
+
+        // Order matters and cost us a measurement to learn: removing a status
+        // item makes macOS clear its stored position, so writing first and
+        // removing second erases the write. Tear everything down, then write,
+        // then build — the same gap the pending-move flow uses when it has to
+        // survive another app quitting.
+        if let item = controlItem {
+            NSStatusBar.system.removeStatusItem(item)
+            controlItem = nil
+        }
+        engine.teardownItems()
+        engine.applyOwnPositions(plan)
+        engine.buildItems(restoringCollapsed: collapsed)
+        installControlItem()
+
+        refreshInventory()
+        animator.play(.jiggle)
+    }
+
+    func canMoveSelf(by delta: Double) -> Bool {
+        engine.canShiftOwnItems(by: delta, controlName: Self.controlAutosaveName)
     }
 
     /// Attaches the menu only for the duration of the click, so the left

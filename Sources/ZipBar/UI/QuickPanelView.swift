@@ -21,6 +21,8 @@ struct QuickPanelView: View {
     var onToggle: () -> Void
     var onRevealAll: () -> Void
     var onRestart: ([MenuBarInventory.Item]) -> Void
+    var onMoveSelf: (Double) -> Void
+    var canMoveSelf: (Double) -> Bool
 
     /// Excludes always-hidden groups, which are shut by definition — counting
     /// them pinned this to true and left the button stuck on "펼치기".
@@ -55,6 +57,8 @@ struct QuickPanelView: View {
                 applyStrip
             }
 
+            Divider()
+            selfMoveRow
             Divider()
             footer
         }
@@ -144,6 +148,22 @@ struct QuickPanelView: View {
                     .buttonStyle(.borderless)
                     .controlSize(.small)
             } else if inventory.canMove(item) {
+                // Order first, then side. Both write the same stored value,
+                // so they carry the same restart caveat — but reordering is
+                // the more frequent act once things are where they belong.
+                HStack(spacing: 2) {
+                    Button {
+                        inventory.reorder(item, towardLeft: true)
+                    } label: { Image(systemName: "chevron.left") }
+                        .help("왼쪽으로")
+                    Button {
+                        inventory.reorder(item, towardLeft: false)
+                    } label: { Image(systemName: "chevron.right") }
+                        .help("오른쪽으로")
+                }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
+
                 // One button, and it says where the icon is going. The
                 // destination is the other side of the boundary, which is what
                 // "put in" and "take out" mean with a single group.
@@ -193,6 +213,32 @@ struct QuickPanelView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(.orange.opacity(0.08))
+    }
+
+    /// ZipBar's own position. Separated from the icon rows because it is
+    /// the one move that applies immediately — we create these items, so we
+    /// can make them again — and because it needs no restart to explain.
+    private var selfMoveRow: some View {
+        HStack(spacing: 8) {
+            Text("ZipBar 위치")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button {
+                onMoveSelf(SelfPlacement.step)
+            } label: { Image(systemName: "chevron.left") }
+                .disabled(!canMoveSelf(SelfPlacement.step))
+                .help("슬라임을 왼쪽으로")
+            Button {
+                onMoveSelf(-SelfPlacement.step)
+            } label: { Image(systemName: "chevron.right") }
+                .disabled(!canMoveSelf(-SelfPlacement.step))
+                .help("슬라임을 오른쪽으로")
+        }
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
     }
 
     private var footer: some View {
