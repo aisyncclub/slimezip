@@ -126,8 +126,17 @@
     var running = false;
     var onScreen = true;
 
+    // WebP where it is understood, PNG otherwise. Decided once at start
+    // rather than per frame: a canvas probe on every swap would be a
+    // pointless cost twenty times a minute.
+    var ext = (function () {
+      var c = document.createElement('canvas');
+      return (c.getContext && c.toDataURL('image/webp').indexOf('data:image/webp') === 0)
+        ? '.webp' : '.png';
+    })();
+
     function frame() {
-      img.src = 'img/slime-' + (blinking ? 'blink-' : '') + stage + '.png';
+      img.src = 'img/slime-' + (blinking ? 'blink-' : '') + stage + ext;
     }
     function label() {
       count.textContent = (stage === 1 ? 0 : stage) + '개';
@@ -136,8 +145,8 @@
     // Preloaded so the first swap does not flash an empty box while the
     // browser fetches a frame it has never seen.
     for (var i = 1; i <= STAGES; i++) {
-      new Image().src = 'img/slime-' + i + '.png';
-      new Image().src = 'img/slime-blink-' + i + '.png';
+      new Image().src = 'img/slime-' + i + ext;
+      new Image().src = 'img/slime-blink-' + i + ext;
     }
 
     function after(ms, fn) {
