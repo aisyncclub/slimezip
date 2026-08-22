@@ -171,6 +171,24 @@ public final class MenuBarEngine: ObservableObject {
         syncCollapseState()
     }
 
+    /// Whether the groups a click can actually open are currently shut.
+    ///
+    /// Always-hidden groups are excluded on purpose: they are shut by
+    /// definition and never open on a toggle, so counting them made this
+    /// permanently true. The button then read "펼치기" forever and pressing it
+    /// re-expanded an already-open group — a control that looked broken while
+    /// behaving exactly as written.
+    public var isToggleableCollapsed: Bool {
+        layout.groups.contains {
+            $0.behavior != .alwaysHidden && collapseState[$0.id] == true
+        }
+    }
+
+    /// Whether there is anything a toggle can act on at all.
+    public var hasToggleableGroup: Bool {
+        layout.groups.contains { $0.behavior != .alwaysHidden }
+    }
+
     /// Opens every group, including the always-hidden one.
     ///
     /// The deliberate exception to `expandAll`. A group set to always-hidden

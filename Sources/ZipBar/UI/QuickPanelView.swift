@@ -22,9 +22,9 @@ struct QuickPanelView: View {
     var onRevealAll: () -> Void
     var onRestart: ([MenuBarInventory.Item]) -> Void
 
-    private var anyCollapsed: Bool {
-        engine.layout.groups.contains { engine.collapseState[$0.id] == true }
-    }
+    /// Excludes always-hidden groups, which are shut by definition — counting
+    /// them pinned this to true and left the button stuck on "펼치기".
+    private var anyCollapsed: Bool { engine.isToggleableCollapsed }
 
     private var hasAlwaysHidden: Bool {
         engine.layout.groups.contains { $0.behavior == .alwaysHidden }
@@ -77,16 +77,26 @@ struct QuickPanelView: View {
                      ? "숨긴 아이콘 없음"
                      : "\(inventory.held.count)개 물고 있음")
                     .font(.headline)
-                Text(anyCollapsed ? "지금 감춰져 있습니다" : "지금 펼쳐져 있습니다")
+                Text(statusLine)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button(anyCollapsed ? "펼치기" : "접기", action: onToggle)
-                .controlSize(.small)
+            if engine.hasToggleableGroup {
+                Button(anyCollapsed ? "펼치기" : "접기", action: onToggle)
+                    .controlSize(.small)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
+    }
+
+    /// Says what the toggle will do, and says nothing misleading when there is
+    /// no toggleable group — "감춰져 있습니다" beside a button that cannot
+    /// reveal anything is worse than silence.
+    private var statusLine: String {
+        guard engine.hasToggleableGroup else { return "항상 숨김만 있습니다" }
+        return anyCollapsed ? "지금 감춰져 있습니다" : "지금 펼쳐져 있습니다"
     }
 
     // MARK: - Groups

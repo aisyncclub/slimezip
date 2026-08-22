@@ -649,8 +649,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func toggleAll() {
-        let anyCollapsed = engine.layout.groups.contains { engine.collapseState[$0.id] == true }
-        if anyCollapsed {
+        if engine.isToggleableCollapsed {
             engine.expandAll()
             // The user is looking at the icons now, so whatever changed while
             // they were hidden has been seen.
