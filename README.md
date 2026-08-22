@@ -83,3 +83,16 @@ Developer ID 서명 + 공증 후 직접 배포(+ Homebrew cask)가 유일한 경
 
 `Ice`는 GPL-3.0이다. 향후 라이선스 유연성을 위해 **Ice 소스는 읽지도 참조하지도 않는다.**
 동작만 관찰한다.
+
+## 설치
+
+터미널 세 줄이면 됩니다.
+
+```bash
+git clone https://github.com/aisyncclub/zipbar.git
+cd zipbar && ./scripts/build-app.sh
+open dist/ZipBar.app
+```
+
+접근성 권한이 필요합니다. 단계별 안내와 문제 해결은 [설치 가이드](docs/INSTALL.md)에
+있습니다. 소개 페이지는 [`web/index.html`](web/index.html)을 브라우저로 열면 됩니다.
