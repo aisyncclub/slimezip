@@ -99,7 +99,10 @@ nav{
   color:#fff;padding:76px 0 78px;position:relative;overflow:hidden;
 }
 .hero .eyebrow{background:rgba(255,255,255,.14);color:#fff}
-.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+/* The text column carries the longest unbreakable line, so it gets the
+   larger share. The cards can afford less room — they are tilted and
+   overlapping, which already reads as depth at any width. */
+.hero-grid{display:grid;grid-template-columns:1.18fr .82fr;gap:48px;align-items:center}
 .hero-grid > *,.prob-grid > *,.stats > *,.bento-grid > *,.step-grid > *,.install-grid > *{min-width:0}
 
 /* Stacked headline: three tinted copies sit behind the white one,
@@ -108,11 +111,14 @@ nav{
    a screen reader should hear the sentence once. */
 .stack{position:relative;margin-top:26px}
 .stack h1,.stack .layer{
-  /* The floor is set by the longest unbreakable line at the narrowest
-     supported width: "슬라임이 먹습니다." has to fit inside a 342px column
-     on a 390px phone, and keep-all means it cannot be broken to help. */
-  font-size:clamp(29px,6.2vw,74px);font-weight:900;line-height:1.18;
-  letter-spacing:-.035em;margin:0;
+  /* Both ends are set by the longest unbreakable line, "메뉴바 훑지
+     마세요.": the ceiling so it stays on one line in the desktop column,
+     the floor so it still fits a 390px phone. keep-all means the browser
+     cannot break it to help, and a headline that wraps here also breaks
+     the tinted layers behind it — they wrap on their own box and the two
+     stop lining up. */
+  font-size:clamp(28px,5vw,62px);font-weight:900;line-height:1.2;
+  letter-spacing:-.038em;margin:0;
 }
 .stack .layer{position:absolute;inset:0;user-select:none;pointer-events:none}
 .stack .l0{color:rgba(189,235,207,.22);transform:translateY(13px)}
@@ -154,12 +160,31 @@ nav{
 .mock-caption{font-size:13px;color:rgba(255,255,255,.72);margin-top:9px}
 .mock + .mock{margin-top:16px}
 
+/* Tilted and overlapping, the way the reference floats its cards: the pair
+   reads as one object with depth rather than two panels stacked in a
+   column. The rotation is small — enough to feel unposed, not so much that
+   the menu bar inside stops looking like a menu bar. */
+.mock.tilt-a{transform:rotate(-2.4deg)}
+.mock.tilt-b{transform:rotate(1.8deg);margin-top:-6px;margin-left:22px;position:relative;z-index:2}
+.mock.tilt-b{box-shadow:0 30px 68px rgba(0,0,0,.28)}
+@media (max-width:900px){
+  /* Straightened on narrow screens: a tilt that overflows is just a
+     horizontal scrollbar. */
+  .mock.tilt-a,.mock.tilt-b{transform:none;margin-left:0}
+  .mock.tilt-b{margin-top:16px}
+}
+
 /* ── Hero mascot ──────────────────────────────────────────────
    Sized from the artwork's own aspect ratio so a re-cut sprite cannot
    silently distort it. The squash is applied to a wrapper rather than
    the <img> itself, so swapping frames mid-animation never restarts
    the deformation. */
-.mascot{margin:26px 0 0;display:flex;flex-direction:column;align-items:center;gap:10px}
+.mascot{
+  margin:22px 0 0;display:flex;flex-direction:column;align-items:center;gap:10px;
+  /* Sits under the leading corner of the tilted stack, so the eye goes
+     cards → slime rather than treating it as a separate block. */
+  padding-right:clamp(0px,6vw,64px);
+}
 .mascot img{
   width:clamp(120px,13vw,168px);height:auto;
   transform-origin:bottom center;
@@ -328,6 +353,11 @@ footer{background:#08201b;color:rgba(255,255,255,.62);padding:52px 0;font-size:1
   .stack .l0{transform:translateY(9px)}
   .stack .l1{transform:translateY(6px)}
   .stack .l2{transform:translateY(3px)}
+
+  /* The hard breaks are typeset for a wide column. On a phone they
+     land mid-thought and leave a two-word orphan line, so let the
+     text wrap on its own instead. */
+  .sub br,.hero-trust br{display:none}
 }
 
 /* ══════════════════════════════════════════════════════════════
