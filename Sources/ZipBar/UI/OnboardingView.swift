@@ -41,9 +41,10 @@ struct OnboardingView: View {
         ),
         Step(
             slimeStage: nil, symbol: "arrow.clockwise",
-            title: "'모두 적용'으로 마무리합니다",
-            detail: "아이콘 위치는 그 앱이 시작할 때 읽히므로, 옮긴 결과는 해당 앱을 "
-                  + "재시작해야 나타납니다. ZipBar가 대신 재시작해 줍니다."
+            title: "재시작은 한 번뿐입니다",
+            detail: "아이콘의 자리는 그 앱이 시작할 때 읽히므로, 처음 넣거나 뺄 때만 "
+                  + "그 앱을 한 번 재시작합니다. 자리가 정해진 뒤로는 감추고 꺼내는 "
+                  + "것이 슬라임 클릭만으로 즉시 됩니다."
         ),
         Step(
             slimeStage: 5, symbol: nil,

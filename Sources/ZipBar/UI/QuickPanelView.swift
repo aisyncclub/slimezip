@@ -166,15 +166,26 @@ struct QuickPanelView: View {
     // MARK: - Apply
 
     private var applyStrip: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "clock.arrow.circlepath")
-                .foregroundStyle(.orange)
-            Text("\(waiting.count)개가 앱 재시작을 기다립니다")
-                .font(.caption)
-            Spacer()
-            Button("적용") { onRestart(waiting) }
-                .controlSize(.small)
-                .buttonStyle(.borderedProminent)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .foregroundStyle(.orange)
+                Text("\(waiting.count)개가 앱 재시작을 기다립니다")
+                    .font(.caption)
+                Spacer()
+                Button("적용") { onRestart(waiting) }
+                    .controlSize(.small)
+                    .buttonStyle(.borderedProminent)
+            }
+            // The distinction that decides whether this app is tolerable to
+            // live with: a restart buys a *permanent* place for the icon, and
+            // hiding it after that is instant. Without saying so the strip
+            // reads as "every hide costs a restart", which would be miserable.
+            Text("한 번만 하면 됩니다. 자리를 옮기는 것이라, 그 뒤로 감추고 "
+                 + "꺼내는 것은 슬라임 클릭만으로 즉시 됩니다.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

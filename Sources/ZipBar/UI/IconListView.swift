@@ -269,8 +269,9 @@ struct IconListView: View {
     private var footer: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "info.circle").foregroundStyle(.secondary)
-            Text("숨기기·꺼내기는 macOS가 아이콘 위치를 기억하는 값을 고쳐 쓰고, "
-                 + "해당 앱이 재시작될 때 적용됩니다. ⌘드래그로 직접 옮기면 즉시 "
+            Text("숨기기·꺼내기는 아이콘의 자리를 옮기는 일이라 그 앱을 한 번 "
+                 + "재시작해야 합니다. 자리가 정해진 뒤로는 슬라임 클릭만으로 즉시 "
+                 + "감추고 꺼낼 수 있습니다. ⌘드래그로 직접 옮기면 재시작 없이 "
                  + "반영되며, 그 배치가 항상 우선합니다.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
