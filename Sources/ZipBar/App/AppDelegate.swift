@@ -201,6 +201,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Renders the settings views to a file so their appearance can be
+        // checked without a screen recording permission or a human at the
+        // keyboard. The window itself cannot be opened from a script, and
+        // "it compiles" says nothing about whether the slimes draw.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_UI"] == "1" {
+            let out = ProcessInfo.processInfo.environment["ZIPBAR_UI_OUT"] ?? "/tmp/zipbar-ui.png"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.renderSettingsPreview(to: out)
+                NSApp.terminate(nil)
+            }
+            return
+        }
+
         // First run: explain the ⌘-drag step, because with the spacer backend
         // nothing appears to happen until the user arranges their icons.
         if !UserDefaults.standard.bool(forKey: Self.onboardingShownKey) {
@@ -310,6 +323,71 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? png.write(to: URL(fileURLWithPath: path))
         FileHandle.standardError.write(Data(
             "저장: \(path)  (위→아래: \(motions.map(\.0).joined(separator: ", ")))\n".utf8))
+    }
+
+    @MainActor
+    private func renderSettingsPreview(to path: String) {
+        inventory.boundaries = engine.boundaries()
+        inventory.refresh()
+
+        // ImageRenderer cannot draw List or ScrollView — it substitutes a
+        // "not supported" placeholder — so the preview composes the pieces
+        // those containers would hold. That is what needs checking anyway:
+        // whether the slimes draw at the right size and proportion.
+        let preview = VStack(alignment: .leading, spacing: 14) {
+            ForEach(Array(inventory.boundaries.enumerated()), id: \.offset) { index, boundary in
+                ZoneHeader(
+                    title: boundary.name,
+                    subtitle: boundary.behavior == .alwaysHidden
+                        ? "슬라임이 계속 물고 있습니다"
+                        : "슬라임을 누르면 여기가 열리고 닫힙니다",
+                    count: self.inventory.items(in: .group(index)).count)
+            }
+            ZoneHeader(
+                title: "밖에 나와 있는 것", subtitle: "언제나 메뉴바에 보입니다",
+                count: self.inventory.items(in: .visible).count)
+
+            Divider()
+            SlimeEmptyState(message: "여기는 아직 비어 있습니다. 아래에서 넣어보세요.")
+
+            Divider()
+            Text("단계별 (설정 화면 크기)").font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 14) {
+                ForEach(1...SlimeRenderer.stageCount, id: \.self) { stage in
+                    VStack(spacing: 3) {
+                        SlimeDecor.Portrait(stage: stage, height: 30, animated: false)
+                        Text("\(stage)").font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            Divider()
+            Text("사용법 항목").font(.caption).foregroundStyle(.secondary)
+            HStack(alignment: .top, spacing: 12) {
+                SlimeDecor.Portrait(stage: 1, height: 26, animated: false)
+                    .frame(width: 34)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("메뉴바의 슬라임이 ZipBar입니다").font(.headline)
+                    Text("숨긴 아이콘이 없으면 한 마리가 둥글게 쉬고 있습니다.")
+                        .font(.callout).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(18)
+        .frame(width: 620, alignment: .leading)
+        .background(Color(nsColor: .windowBackgroundColor))
+
+        let renderer = ImageRenderer(content: preview)
+        renderer.scale = 2
+        guard let image = renderer.nsImage,
+              let tiff = image.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:])
+        else {
+            FileHandle.standardError.write(Data("렌더 실패\n".utf8)); return
+        }
+        try? png.write(to: URL(fileURLWithPath: path))
+        FileHandle.standardError.write(Data("저장: \(path)\n".utf8))
     }
 
     /// Report what actually reached the menu bar.

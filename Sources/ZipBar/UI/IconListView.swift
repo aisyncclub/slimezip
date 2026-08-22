@@ -73,9 +73,8 @@ struct IconListView: View {
 
     private var permissionGate: some View {
         VStack(spacing: 12) {
-            Image(systemName: "lock.shield")
-                .font(.system(size: 34))
-                .foregroundStyle(.secondary)
+            SlimeDecor.Portrait(stage: 1, height: 46)
+                .opacity(0.65)
             Text("어떤 아이콘이 메뉴바에 있는지 보려면 접근성 권한이 필요합니다")
                 .font(.headline)
             Text("macOS 26은 상태 아이템을 제어 센터가 대신 표시해서, 권한 없이는 "
@@ -173,10 +172,7 @@ struct IconListView: View {
         let entries = inventory.items(in: zone)
         Section {
             if entries.isEmpty {
-                Text(empty)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                SlimeEmptyState(message: empty)
             } else {
                 ForEach(entries) { item in zoneRow(item, currentZone: zone) }
             }

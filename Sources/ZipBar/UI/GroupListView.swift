@@ -21,8 +21,9 @@ struct GroupListView: View {
             List(selection: $selection) {
                 ForEach(engine.layout.groups) { group in
                     HStack {
-                        Image(systemName: group.symbolName)
-                            .foregroundStyle(.tint)
+                        // The bar has no chevron any more — the slime is the
+                        // only thing of ours in it, so the row previews that.
+                        SlimeDecor.Inline(stage: 2)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(group.name)
                             Text(group.behavior.displayName)
@@ -102,12 +103,6 @@ struct GroupListView: View {
         return Form {
             Section {
                 TextField("이름", text: bound.name)
-
-                Picker("셰브론", selection: bound.symbolName) {
-                    ForEach(MenuBarGroup.symbolChoices, id: \.self) { symbol in
-                        Label(symbol, systemImage: symbol).tag(symbol)
-                    }
-                }
 
                 Picker("동작", selection: bound.behavior) {
                     ForEach(MenuBarGroup.Behavior.allCases, id: \.self) { behavior in

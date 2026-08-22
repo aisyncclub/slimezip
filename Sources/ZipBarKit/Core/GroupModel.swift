@@ -39,16 +39,18 @@ public struct MenuBarGroup: Identifiable, Codable, Hashable, Sendable {
     /// Grace period before auto-hide fires.
     public var autoHideDelay: TimeInterval
 
-    /// Chevron glyphs offered in settings. Kept on the model rather than in
-    /// the view so `SymbolAvailabilityTests` can assert every one of them
-    /// still resolves — a name that does not renders as an invisible status
-    /// item, which reads as the app having failed to launch.
+    /// Retained only so existing saved profiles still decode.
+    ///
+    /// The chevron these named is gone: the slime is now the only item ZipBar
+    /// puts in the bar, and it draws its own artwork. Nothing renders
+    /// `symbolName` any more, so offering a picker for it asked the user to
+    /// choose something they would never see.
     public static let symbolChoices = [
         "chevron.left", "chevron.left.2", "ellipsis.circle",
         "square.stack.3d.up", "tray.full", "archivebox", "bolt.horizontal",
     ]
 
-    /// Glyph shown on a chevron whose group is currently open.
+    /// Unused since the chevron was removed; kept for profile compatibility.
     public static let expandedSymbol = "chevron.right"
 
     public init(

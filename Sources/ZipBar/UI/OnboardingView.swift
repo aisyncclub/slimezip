@@ -1,31 +1,55 @@
 import SwiftUI
+import ZipBarKit
 
-/// The spacer backend cannot move other apps' icons, so the user has to place
-/// them once by hand. Hiding that fact produces an app that looks broken on
-/// first launch; stating it produces one that looks honest.
+/// How the app is actually used, told through the slime.
+///
+/// The previous version described a menu bar that no longer exists: a
+/// separator glyph and a chevron the user was told to click, and a ⌘-drag as
+/// the only way to move anything. All three are gone — one slime replaced the
+/// separator and chevron, and moves became buttons once ZipBar learned to
+/// rewrite where macOS remembers each icon. Instructions that describe a
+/// previous version are worse than none, because the user trusts them and
+/// then cannot find what they name.
 struct OnboardingView: View {
     private struct Step: Identifiable {
         let id = UUID()
-        let symbol: String
+        /// Slime fullness to illustrate the step with, when it has one.
+        let slimeStage: Int?
+        let symbol: String?
         let title: String
         let detail: String
     }
 
     private let steps: [Step] = [
         Step(
-            symbol: "1.circle.fill",
-            title: "그룹을 만드세요",
-            detail: "'그룹' 탭에서 그룹을 추가하면 메뉴바에 구분자(⋮)와 셰브론이 하나씩 생깁니다."
+            slimeStage: 1, symbol: nil,
+            title: "메뉴바의 슬라임이 ZipBar입니다",
+            detail: "숨긴 아이콘이 없으면 한 마리가 둥글게 쉬고 있습니다. "
+                  + "가끔 숨을 쉬고 눈을 깜빡입니다."
         ),
         Step(
-            symbol: "2.circle.fill",
-            title: "⌘를 누른 채 아이콘을 드래그하세요",
-            detail: "숨기고 싶은 아이콘을 구분자의 왼쪽으로 옮깁니다. macOS가 위치를 기억하므로 한 번만 하면 됩니다."
+            slimeStage: nil, symbol: "cursorarrow.click",
+            title: "슬라임을 클릭하면 접히고 펴집니다",
+            detail: "왼쪽 클릭으로 숨긴 아이콘을 잠깐 꺼내 보고 다시 넣습니다. "
+                  + "오른쪽 클릭하면 메뉴가 열립니다."
         ),
         Step(
-            symbol: "3.circle.fill",
-            title: "셰브론으로 접고 펴세요",
-            detail: "셰브론을 클릭하면 해당 그룹이 접히고 펴집니다. 자동 숨김을 켜두면 포인터가 메뉴바를 벗어날 때 다시 접힙니다."
+            slimeStage: nil, symbol: "list.bullet.rectangle",
+            title: "'아이콘' 탭에서 넣고 뺍니다",
+            detail: "숨기고 싶은 아이콘 옆의 버튼을 누르면 됩니다. "
+                  + "직접 끌어다 옮길 필요는 없습니다."
+        ),
+        Step(
+            slimeStage: nil, symbol: "arrow.clockwise",
+            title: "'모두 적용'으로 마무리합니다",
+            detail: "아이콘 위치는 그 앱이 시작할 때 읽히므로, 옮긴 결과는 해당 앱을 "
+                  + "재시작해야 나타납니다. ZipBar가 대신 재시작해 줍니다."
+        ),
+        Step(
+            slimeStage: 5, symbol: nil,
+            title: "많이 물수록 납작해집니다",
+            detail: "숨긴 아이콘이 늘어나면 슬라임들이 같은 자리에서 서로를 눌러 "
+                  + "찌부됩니다. 아이콘이 넓어지지는 않습니다."
         ),
     ]
 
@@ -34,9 +58,18 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 18) {
                 ForEach(steps) { step in
                     HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: step.symbol)
-                            .font(.title2)
-                            .foregroundStyle(.tint)
+                        Group {
+                            if let stage = step.slimeStage {
+                                SlimeDecor.Portrait(stage: stage, height: 26)
+                            } else if let symbol = step.symbol {
+                                Image(systemName: symbol)
+                                    .font(.title3)
+                                    .foregroundStyle(.tint)
+                                    .frame(width: 26, height: 26)
+                            }
+                        }
+                        .frame(width: 34, alignment: .center)
+
                         VStack(alignment: .leading, spacing: 3) {
                             Text(step.title).font(.headline)
                             Text(step.detail)
@@ -49,19 +82,22 @@ struct OnboardingView: View {
 
                 Divider()
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("지금 단계의 한계", systemImage: "exclamationmark.triangle")
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("아직 안 되는 것", systemImage: "exclamationmark.triangle")
                         .font(.headline)
-                    Text("• 노치 뒤에 가려진 아이콘은 이 방식으로 꺼낼 수 없습니다. 오버플로우 패널이 추가되면 해결됩니다.")
+                    Text("• 노치 뒤에 가려진 아이콘은 이 방식으로 꺼낼 수 없습니다.")
                     Text("• 화면 기록 아이콘처럼 시스템이 우선하는 항목은 숨길 수 없습니다.")
-                    Text("• 그룹은 왼쪽으로 갈수록 안쪽입니다. 바깥 그룹을 접으면 그 왼쪽 그룹도 함께 가려집니다.")
+                    Text("• 숨겨진 앱의 알림은 감지할 수 없습니다. macOS가 다른 앱의 "
+                         + "미읽음 상태를 공개하지 않기 때문에, 대신 아이콘이 바뀌면 "
+                         + "슬라임에 주황 점이 찍힙니다.")
+                    Text("• 그룹은 왼쪽으로 갈수록 안쪽입니다. 바깥 그룹을 접으면 그 "
+                         + "왼쪽 그룹도 함께 가려집니다.")
                 }
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(4)
         }
     }
 }

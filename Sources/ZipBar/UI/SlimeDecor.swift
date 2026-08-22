@@ -5,20 +5,34 @@ import ZipBarKit
 /// Slime artwork for the settings window.
 ///
 /// The same drawings the menu bar uses, at sizes where their faces actually
-/// read. In the bar a slime is 18pt and mostly silhouette; here there is room
-/// for it to be the character it is, which is the point of having one.
+/// read. In the bar a slime is 22pt tall and mostly silhouette; here there is
+/// room for it to be the character it is, which is the point of having one.
+///
+/// Everything sizes from the artwork's own aspect ratio. The drawings are
+/// wider than they are tall — a five-slime cluster more so — and pinning them
+/// into a square frame squashed the very deformation the picture exists to
+/// show.
 enum SlimeDecor {
 
-    /// A slime at a given fullness, or nil if the artwork is missing.
+    /// Aspect ratio of the drawings, measured from the artwork rather than
+    /// assumed, so re-cut artwork cannot silently distort.
+    @MainActor
+    static var aspectRatio: CGFloat {
+        guard let image = SlimeRenderer.stageImage(1, blinking: false),
+              image.size.height > 0
+        else { return 1 }
+        return image.size.width / image.size.height
+    }
+
     static func image(stage: Int, blinking: Bool = false) -> Image? {
         SlimeRenderer.stageImage(stage, blinking: blinking).map { Image(nsImage: $0) }
     }
 
-    /// Slime sized for a section header or an empty state.
+    /// A slime that blinks on its own, so a static window still feels
+    /// inhabited rather than illustrated.
     struct Portrait: View {
         var stage: Int
         var height: CGFloat = 26
-        /// Blinks on its own so a static window still feels inhabited.
         var animated = true
 
         @State private var blinking = false
@@ -28,12 +42,12 @@ enum SlimeDecor {
                 if let image = SlimeDecor.image(stage: stage, blinking: blinking && animated) {
                     image.resizable().scaledToFit()
                 } else {
-                    // Artwork missing: say nothing rather than draw a
-                    // stand-in that would misreport how full the group is.
+                    // Artwork missing: draw nothing rather than a stand-in
+                    // that would misreport how full a group is.
                     Color.clear
                 }
             }
-            .frame(height: height)
+            .frame(width: height * SlimeDecor.aspectRatio, height: height)
             .task(id: animated) {
                 guard animated else { return }
                 // Irregular on purpose — a fixed interval reads as a blinking
@@ -48,6 +62,14 @@ enum SlimeDecor {
             }
         }
     }
+
+    /// The slime at the size the menu bar draws it, for explaining the icon.
+    struct Inline: View {
+        var stage: Int
+        var body: some View {
+            Portrait(stage: stage, height: 18, animated: false)
+        }
+    }
 }
 
 /// A zone's heading: a slime whose fullness reflects what the zone holds,
@@ -58,9 +80,8 @@ struct ZoneHeader: View {
     let count: Int
 
     var body: some View {
-        HStack(spacing: 8) {
-            SlimeDecor.Portrait(stage: Self.stage(for: count), height: 22)
-                .frame(width: 22)
+        HStack(spacing: 9) {
+            SlimeDecor.Portrait(stage: SlimeRenderer.stage(forHiddenCount: count), height: 24)
             VStack(alignment: .leading, spacing: 0) {
                 Text("\(title) (\(count))")
                 Text(subtitle)
@@ -69,12 +90,23 @@ struct ZoneHeader: View {
             }
             Spacer()
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
     }
+}
 
-    /// Mirrors the menu bar's mapping so the two never disagree about how
-    /// full a group looks.
-    static func stage(for count: Int) -> Int {
-        SlimeRenderer.stage(forHiddenCount: count)
+/// Empty-state panel with a slime standing in for an illustration.
+struct SlimeEmptyState: View {
+    var stage: Int = 1
+    var message: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            SlimeDecor.Portrait(stage: stage, height: 30)
+            Text(message)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 4)
     }
 }
