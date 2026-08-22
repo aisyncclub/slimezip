@@ -101,9 +101,124 @@
     track.innerHTML += track.innerHTML;
   }
 
+  /* ── Hero mascot ─────────────────────────────────────────────
+     The same five drawings the menu bar uses, cycled so a visitor sees
+     the product's core behaviour before reading about it: the slime
+     takes icons one at a time until it is packed, holds, then lets
+     them all go.
+
+     Blinking runs on its own clock, because eyes and body are
+     independent — a blink that had to wait for a swallow to finish
+     would read as a stutter.
+
+     It stops when nobody can see it. A landing page that animates
+     forever in a background tab is exactly the CPU waste the app
+     itself refuses to commit. */
+  function setupMascot() {
+    var img = document.getElementById('mascot-img');
+    var count = document.getElementById('mascot-count');
+    if (!img || !count) return;
+
+    var STAGES = 5;
+    var stage = 1;
+    var blinking = false;
+    var timers = [];
+    var running = false;
+    var onScreen = true;
+
+    function frame() {
+      img.src = 'img/slime-' + (blinking ? 'blink-' : '') + stage + '.png';
+    }
+    function label() {
+      count.textContent = (stage === 1 ? 0 : stage) + '개';
+    }
+
+    // Preloaded so the first swap does not flash an empty box while the
+    // browser fetches a frame it has never seen.
+    for (var i = 1; i <= STAGES; i++) {
+      new Image().src = 'img/slime-' + i + '.png';
+      new Image().src = 'img/slime-blink-' + i + '.png';
+    }
+
+    function after(ms, fn) {
+      var t = setTimeout(function () {
+        timers = timers.filter(function (x) { return x !== t; });
+        if (running) fn();
+      }, ms);
+      timers.push(t);
+      return t;
+    }
+
+    function squash(cls, ms) {
+      img.classList.remove('gulp', 'release');
+      // Reading offsetWidth forces the removal to take effect before the
+      // class goes back on; without it the animation never restarts.
+      void img.offsetWidth;
+      img.classList.add(cls);
+      after(ms, function () { img.classList.remove(cls); });
+    }
+
+    function blink() {
+      if (!running) return;
+      blinking = true; frame();
+      after(140, function () {
+        blinking = false; frame();
+        after(2500 + Math.random() * 4000, blink);
+      });
+    }
+
+    function eat() {
+      if (!running) return;
+      if (stage < STAGES) {
+        stage++; frame(); label(); squash('gulp', 420);
+        after(900, eat);
+      } else {
+        // Hold at full so the "packed" state is readable, then release.
+        after(2200, function () {
+          stage = 1; frame(); label(); squash('release', 600);
+          after(2600, eat);
+        });
+      }
+    }
+
+    function start() {
+      if (running) return;
+      running = true;
+      after(1400, eat);
+      after(1800, blink);
+    }
+    function stop() {
+      running = false;
+      timers.forEach(clearTimeout);
+      timers = [];
+    }
+
+    if (reduced) {
+      // Show a filled slime and say so: the still frame still carries the
+      // message, it just does not move.
+      stage = 4; frame(); label();
+      return;
+    }
+
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries) {
+        onScreen = entries[0].isIntersecting;
+        if (onScreen && !document.hidden) start(); else stop();
+      }, { threshold: 0.15 }).observe(img);
+    } else {
+      start();
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stop();
+      else if (onScreen) start();
+    });
+  }
+
   function init() {
     setupMarquee();
     setupReveal();
+    setupMascot();
     runEntrance();
   }
 
