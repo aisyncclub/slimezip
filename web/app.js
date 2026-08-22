@@ -224,8 +224,121 @@
     });
   }
 
+  /* ── Showcase cards ──────────────────────────────────────────
+     Two effects, both built here rather than in markup: ninety-six
+     pixel blocks per card would be four hundred hand-written divs, and
+     the magnetic offsets have to be computed from live geometry.
+
+     Under reduced motion neither runs — the cards keep their artwork
+     and the explanation sits visible instead of waiting for a hover
+     that a keyboard user may never perform. */
+  var PX_COLS = 12, PX_ROWS = 8;
+
+  function setupShowcase() {
+    var cards = document.querySelectorAll('.case');
+    if (!cards.length) return;
+
+    if (reduced) {
+      for (var r = 0; r < cards.length; r++) {
+        var d = cards[r].querySelector('.case-detail');
+        if (d) d.style.opacity = '';
+      }
+      return;
+    }
+
+    Array.prototype.forEach.call(cards, function (card) {
+      buildPixels(card.querySelector('.pixels'));
+      wireMagnets(card);
+    });
+  }
+
+  function buildPixels(host) {
+    if (!host) return;
+    var frag = document.createDocumentFragment();
+    for (var row = 0; row < PX_ROWS; row++) {
+      for (var col = 0; col < PX_COLS; col++) {
+        var b = document.createElement('span');
+        b.className = 'px';
+        b.style.left = (col * 100 / PX_COLS) + '%';
+        b.style.top = (row * 100 / PX_ROWS) + '%';
+        // A hair over one cell, so sub-pixel rounding cannot leave seams
+        // between neighbouring blocks once they are all at scale 1.
+        b.style.width = (100 / PX_COLS + 0.15) + '%';
+        b.style.height = (100 / PX_ROWS + 0.15) + '%';
+        // In along one diagonal, out along the other.
+        b.style.setProperty('--din', ((row + col) * 0.018) + 's');
+        b.style.setProperty('--dout', (((PX_ROWS - row) + (PX_COLS - col)) * 0.012) + 's');
+        frag.appendChild(b);
+      }
+    }
+    host.appendChild(frag);
+  }
+
+  function wireMagnets(card) {
+    var mags = card.querySelectorAll('.mag');
+    if (!mags.length) return;
+
+    // Each square's own position, read once. Reading it per pointermove
+    // would force layout on every frame of a hover.
+    var anchors = Array.prototype.map.call(mags, function (m) {
+      return { el: m, x: parseFloat(m.style.left) / 100, y: parseFloat(m.style.top) / 100 };
+    });
+
+    function lean(px, py) {
+      for (var i = 0; i < anchors.length; i++) {
+        var a = anchors[i];
+        a.el.style.setProperty('--dx', ((px - a.x) * 40).toFixed(1) + 'px');
+        a.el.style.setProperty('--dy', ((py - a.y) * 40).toFixed(1) + 'px');
+      }
+    }
+
+    card.addEventListener('pointermove', function (e) {
+      var b = card.getBoundingClientRect();
+      lean((e.clientX - b.left) / b.width, (e.clientY - b.top) / b.height);
+    });
+    // Back to the middle, which is the same as no offset at all.
+    card.addEventListener('pointerleave', function () { lean(0.5, 0.5); });
+    lean(0.5, 0.5);
+  }
+
+  /* ── Floating squares ────────────────────────────────────────
+     Parallax tied to how far the section has travelled through the
+     viewport. Written on rAF off a passive scroll listener so a fast
+     flick cannot queue up more work than the compositor can drain. */
+  function setupFloaters() {
+    var layer = document.querySelector('.float-layer');
+    var host = layer && layer.closest('section');
+    if (!layer || !host || reduced) return;
+
+    var items = Array.prototype.map.call(layer.querySelectorAll('.floater'), function (el, i) {
+      el.style.setProperty('--bob', (3 + i * 0.4) + 's');
+      el.style.setProperty('--bob-delay', (i * 0.3) + 's');
+      return { el: el, depth: parseFloat(el.getAttribute('data-depth')) || 80 };
+    });
+
+    var queued = false;
+    function apply() {
+      queued = false;
+      var b = host.getBoundingClientRect();
+      // 0 when the section's top touches the bottom of the viewport,
+      // 1 when its bottom leaves the top.
+      var span = b.height + window.innerHeight;
+      var p = Math.min(1, Math.max(0, (window.innerHeight - b.top) / span));
+      for (var i = 0; i < items.length; i++) {
+        items[i].el.style.setProperty('--py', (-p * items[i].depth).toFixed(1) + 'px');
+      }
+    }
+    window.addEventListener('scroll', function () {
+      if (!queued) { queued = true; requestAnimationFrame(apply); }
+    }, { passive: true });
+    window.addEventListener('resize', apply);
+    apply();
+  }
+
   function init() {
     setupMarquee();
+    setupShowcase();
+    setupFloaters();
     setupReveal();
     setupMascot();
     runEntrance();

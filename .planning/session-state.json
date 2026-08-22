@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "created_at": "2026-08-17T05:38:49.895966+00:00",
-  "updated_at": "2026-08-22T15:38:37.473378+00:00",
+  "updated_at": "2026-08-22T16:10:24.313599+00:00",
   "session": {
     "id": "session_20260817_143849",
     "project_path": "/Users/firstandre/mac-saas-zipbar"
@@ -20,10 +20,10 @@
   },
   "analyzer": {
     "last_decision": {
-      "case": "ideation",
-      "context": "general",
-      "complexity": 0.017,
-      "confidence": 0.06
+      "case": "feature_impl",
+      "context": "development",
+      "complexity": 0.34,
+      "confidence": 0.5
     }
   },
   "orchestration": {
@@ -39,11 +39,11 @@
   "project_org": {
     "status": "draft",
     "current": {
-      "org_id": "org-c5e4f339",
-      "request_summary": "디자인을 아래의 프롬프트들을 참고해서 개선해봐 애니메이션\n--\n## ROLE\nRecreate a single-file HTML product landing mosaic **pixel-faithful** to the reference below. Output one self-contain",
+      "org_id": "org-cefb2719",
+      "request_summary": "랜딩페이지 좌우에 선이 길게있는거 별로 안좋아\n그리고 랜딩페이지 구조를 개선해주고\n아래의 \"Build a \"Projects / Case Studies\" section as a React + TypeScript component using Tailwind CSS 3 and Framer M",
       "domain": "development",
-      "complexity": 0.52,
-      "risk_level": "medium",
+      "complexity": 0.34,
+      "risk_level": "low",
       "teams": [],
       "global_blue_team": {
         "roles": [
@@ -235,6 +235,39 @@
         },
         "status": "draft",
         "source_case": "project_planning",
+        "kickoff_approval_required": true
+      },
+      {
+        "org_id": "org-c5e4f339",
+        "request_summary": "디자인을 아래의 프롬프트들을 참고해서 개선해봐 애니메이션\n--\n## ROLE\nRecreate a single-file HTML product landing mosaic **pixel-faithful** to the reference below. Output one self-contain",
+        "domain": "development",
+        "complexity": 0.52,
+        "risk_level": "medium",
+        "teams": [],
+        "global_blue_team": {
+          "roles": [
+            "Global Blue Board"
+          ],
+          "focus": [
+            "팀 간 정렬",
+            "승인 누락",
+            "검증 완전성"
+          ],
+          "status": "pending"
+        },
+        "global_red_team": {
+          "roles": [
+            "Global Red Board"
+          ],
+          "focus": [
+            "승인 우회",
+            "일정 낙관",
+            "통합 실패 시나리오"
+          ],
+          "status": "pending"
+        },
+        "status": "draft",
+        "source_case": "feature_impl",
         "kickoff_approval_required": true
       }
     ]

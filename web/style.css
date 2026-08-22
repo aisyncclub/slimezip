@@ -35,23 +35,11 @@ a{color:inherit;text-decoration:none}
 img{max-width:100%;display:block}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 
-/* Rails — the hairlines that mark the content column and run the whole
-   page height, with a divider closing each band. They replace the
-   alternating background fills the page used to section itself with:
-   the rhythm now comes from the grid rather than from stripes, so the
-   green is an accent again instead of every other row.
-   `max()` pins them to the wrap padding once the column stops being
-   wider than the viewport. */
-.rails{position:relative;--rail:var(--line)}
-.rails::before,.rails::after{
-  content:'';position:absolute;top:0;bottom:0;width:1px;
-  background:var(--rail);pointer-events:none;z-index:0;
-}
-.rails::before{left:max(24px,calc(50% - 536px))}
-.rails::after{right:max(24px,calc(50% - 536px))}
-.rails > *{position:relative;z-index:1}
-.hero.rails,.steps.rails{--rail:rgba(255,255,255,.18)}
-section.rails + section.rails{border-top:1px solid var(--line)}
+/* Bands are separated by a divider only. An earlier pass also ran
+   hairline rails down both sides of the content column; at this page's
+   length they read as a cage around the copy rather than as structure,
+   so only the horizontal rule survives. */
+section + section{border-top:1px solid var(--line)}
 section{padding:88px 0}
 
 /* Small coloured tag above each heading, the reference's way of telling
@@ -244,15 +232,156 @@ nav{
 }
 
 /* ── Marquee ──────────────────────────────────────────────────── */
-.marquee{background:var(--mint-soft);border-block:1px solid var(--mint);
-  overflow:hidden;padding:18px 0}
-.marquee-track{display:flex;white-space:nowrap;animation:marquee-scroll 26s linear infinite}
-.marquee span{
-  flex:0 0 auto;padding-right:.4em;color:var(--green);
-  font-size:clamp(20px,3vw,34px);font-weight:900;letter-spacing:-.02em;
-  line-height:1;user-select:none;
-}
 @keyframes marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ══ Showcase ═══════════════════════════════════════════════════
+   The one section on the page that is graphic rather than typographic:
+   hard-edged squares, a light heading, and cards that react to the
+   pointer. It earns the attention because it is where the product is
+   actually shown.
+   ═══════════════════════════════════════════════════════════════ */
+.showcase{position:relative;overflow:hidden;padding:112px 0 88px}
+
+/* Floating squares. The element carries the scroll parallax that script
+   writes into --py; the ::before carries the idle bob. Splitting them
+   matters — one element cannot hold two competing transforms. */
+.float-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.floater{position:absolute;transform:translateY(var(--py,0px));will-change:transform}
+.floater::before{
+  content:'';position:absolute;inset:0;background:var(--ink);opacity:.82;
+  animation:bob var(--bob,3s) ease-in-out var(--bob-delay,0s) infinite;
+}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+.showcase .wrap{position:relative;z-index:1}
+.badge{
+  display:inline-block;margin-bottom:20px;padding:6px 16px;
+  background:var(--ink);color:#fff;font-size:13px;font-weight:500;letter-spacing:.02em;
+}
+/* Light where the rest of the page is heavy, and the second half greyed
+   back so the eye reads the subject first. */
+h2.display{
+  font-size:clamp(29px,3.4vw,46px);font-weight:300;line-height:1.25;
+  letter-spacing:-.03em;margin:0;
+}
+h2.display .dim{color:rgba(11,31,27,.38)}
+
+/* ── Case cards ──────────────────────────────────────────────── */
+.case-grid{display:grid;gap:16px;grid-template-columns:1fr 1fr;margin-top:52px}
+.case-grid > *{min-width:0}
+.case{
+  position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:16px;
+  background:linear-gradient(150deg,var(--green) 0%,var(--green-deep) 100%);
+}
+.case-art{position:absolute;inset:0;display:grid;place-items:center}
+.case-art img{width:44%;max-width:210px;filter:drop-shadow(0 18px 32px rgba(0,0,0,.3))}
+
+/* Pixel wipe. Ninety-six blocks per card, scaled in on a diagonal
+   stagger and out on the opposite diagonal, so the card dissolves in
+   one direction and resolves in the other instead of blinking. */
+.pixels{position:absolute;inset:0;z-index:5;pointer-events:none}
+.px{
+  position:absolute;background:var(--ink);
+  transform:scale(0);opacity:0;transform-origin:center;
+  transition:transform .25s var(--ease-type),opacity .25s var(--ease-type);
+  transition-delay:var(--dout,0s);
+}
+.case:hover .px,.case:focus-within .px{
+  transform:scale(1);opacity:1;transition-delay:var(--din,0s);
+}
+/* Centred rather than pinned to the top: once the wipe has taken the
+   artwork away the sentence is the only thing left on the card, and a
+   line of text hanging off the top edge left the middle empty. */
+.case-detail{
+  position:absolute;z-index:6;inset:0;margin:0;
+  display:flex;align-items:center;
+  padding:0 30px 46px;color:#fff;
+  font-size:clamp(16px,1.5vw,19px);font-weight:500;line-height:1.65;letter-spacing:-.02em;
+  opacity:0;transform:translateY(8px);
+  transition:opacity .3s var(--ease-out),transform .3s var(--ease-out);
+}
+.case:hover .case-detail,.case:focus-within .case-detail{
+  opacity:1;transform:none;transition-delay:.26s;
+}
+
+/* Magnetic squares: script writes the offset, the transition does the
+   settling. A real spring would need a frame loop per square; at this
+   size the difference is not visible and the loop is not worth it. */
+.mag{
+  position:absolute;z-index:7;background:var(--ink);pointer-events:none;
+  transform:translate(var(--dx,0px),var(--dy,0px));
+  transition:transform .55s var(--ease-out);
+}
+.plus{
+  position:absolute;z-index:10;right:16px;top:16px;
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,.34);color:#fff;font-size:13px;line-height:1;
+}
+.plus.dark{position:static;border-color:rgba(11,31,27,.2);color:var(--ink);margin-bottom:16px}
+.plate{
+  position:absolute;z-index:20;left:0;bottom:0;max-width:74%;
+  background:var(--paper);padding:10px 18px 12px;border-radius:0 16px 0 0;
+}
+.plate h3{margin:0;font-size:clamp(20px,2.1vw,30px);font-weight:500;line-height:1.15;letter-spacing:-.03em}
+.plate-meta{display:flex;gap:16px;margin-top:6px;align-items:baseline}
+.plate-meta .cat{font-size:12px;color:var(--muted)}
+.plate-meta .num{font-size:12px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* ── Closing row: the ask, and the ticker ────────────────────── */
+.close-row{display:flex;gap:48px;align-items:flex-end;margin-top:64px}
+.close-copy{max-width:440px}
+.close-copy p{margin:0;font-size:14px;line-height:1.75;color:var(--muted)}
+.cta-arrow{display:inline-flex;align-items:flex-end;margin-top:26px}
+.cta-label{
+  display:inline-flex;align-items:center;padding:11px 18px;
+  background:var(--ink);color:#fff;font-size:16px;font-weight:600;
+  transition:background .2s;
+}
+.cta-arrow:hover .cta-label{background:rgba(11,31,27,.85)}
+.cta-badge{
+  width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+  background:var(--ink);color:#fff;margin-bottom:24px;
+  transition:margin-bottom .3s var(--ease-type);
+}
+.cta-arrow:hover .cta-badge{margin-bottom:38px}
+
+.close-marquee{flex:1;overflow:hidden;padding:18px 0;min-width:0}
+/* The track holds two identical halves — script duplicates them — so a
+   scroll to -50% lands exactly where it started. `w-max` is what keeps
+   the halves from wrapping and breaking that. */
+.marquee-track{
+  display:flex;width:max-content;white-space:nowrap;
+  animation:marquee-scroll 28s linear infinite;
+}
+.close-marquee:hover .marquee-track{animation-play-state:paused}
+.logo{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:10px;padding:0 32px;
+  font-size:14px;font-weight:600;letter-spacing:.01em;color:rgba(11,31,27,.8);
+  white-space:nowrap;
+}
+.logo svg{flex:0 0 auto;color:var(--ink)}
+
+/* No pointer, no hover — so the sentence the wipe reveals would never
+   be seen on a phone. There it simply stands on the card, and the wipe
+   that had nothing to trigger it is removed rather than left dormant. */
+@media (hover:none){
+  .pixels{display:none}
+  .case-detail{
+    opacity:1;transform:none;align-items:flex-start;
+    padding:22px 22px 0;font-size:14px;font-weight:500;
+    text-shadow:0 1px 14px rgba(6,40,33,.55);
+  }
+  .case-art{place-items:end center;padding-bottom:14%}
+  .case-art img{width:38%}
+}
+
+@media (max-width:900px){
+  .showcase{padding:76px 0 64px}
+  .case-grid{grid-template-columns:1fr}
+  .close-row{flex-direction:column;align-items:stretch;gap:26px}
+  .close-marquee{border-top:1px solid var(--line)}
+  .float-layer{display:none}
+}
 
 /* ── Problem ──────────────────────────────────────────────────── */
 /* Bands used to alternate paper / paper-2 / green. The rails and
@@ -318,8 +447,12 @@ nav{
 
 /* ── Install ──────────────────────────────────────────────────── */
 .install-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:44px;align-items:start}
+/* Soft-wrapped rather than side-scrolled. The install command is one
+   long URL; a horizontal scrollbar hides half of it, and a backslash
+   continuation is one careless copy away from a broken command. */
 pre{background:#0d211d;color:#d6f2e6;border-radius:16px;padding:22px;
-  font-size:14px;line-height:1.85;overflow-x:auto;margin:0;
+  font-size:14px;line-height:1.85;margin:0;
+  white-space:pre-wrap;word-break:break-all;
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 pre .c{color:#7fae9f}
 .req{border:1px solid var(--line);border-radius:var(--radius);padding:24px}
