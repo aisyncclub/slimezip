@@ -34,6 +34,9 @@ struct QuickPanelView: View {
 
     @State private var hoveringCredit = false
 
+    /// Read once per panel, not per redraw: it comes off disk.
+    private let promo = PromoBanner.load()
+
     /// How tall the list wants to be.
     ///
     /// Measured from the parts rather than guessed: a row is a 26pt icon
@@ -45,7 +48,10 @@ struct QuickPanelView: View {
     private var listHeight: CGFloat {
         let rows = CGFloat(inventory.items.count) * 40
         let headings = CGFloat(inventory.boundaries.count + 1) * 28
-        return min(max(rows + headings + 8, 140), 470)
+        // Cut from 470. A full bar's worth of icons no longer fits at once
+        // and scrolls instead, which is the trade: the panel stops running
+        // most of the way down the screen every time it opens.
+        return min(max(rows + headings + 8, 120), 190)
     }
 
     private var waiting: [MenuBarInventory.Item] {
@@ -95,11 +101,12 @@ struct QuickPanelView: View {
             }
 
             Divider()
-            selfMoveRow
-            Divider()
-            footer
+            utilityRow
             Divider()
             credit
+            if promo.enabled && !promo.text.isEmpty {
+                PromoBannerView(promo: promo)
+            }
         }
         // Widened from 300. At that width the name, the two reorder
         // arrows and the in/out button sat shoulder to shoulder, and the
@@ -156,19 +163,18 @@ struct QuickPanelView: View {
                             : "숨긴 \(inventory.concealed.count)개 꺼내 보기")
                          : "다시 감추기")
                         .fontWeight(.semibold)
+                    Text("· 재시작 없이")
+                        .font(.caption2)
+                        .opacity(0.75)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 3)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-
-            Text("재시작 없이 즉시 됩니다")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 14)
-        .padding(.bottom, 12)
+        .padding(.bottom, 10)
     }
 
     /// Says what the toggle will do, and says nothing misleading when there is
@@ -287,15 +293,9 @@ struct QuickPanelView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                // The distinction that decides whether this app is tolerable
-                // to live with: a restart buys a *permanent* place for the
-                // icon. Hiding and showing after that is the slime click, and
-                // costs nothing.
-                Text("자리를 정하는 것이라 아이콘마다 한 번뿐입니다. "
-                     + "그 뒤로 감추고 꺼내는 것은 위의 접기/펼치기로 즉시 됩니다.")
+                Text("아이콘마다 한 번뿐입니다.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if !waitingForLogin.isEmpty {
@@ -306,8 +306,7 @@ struct QuickPanelView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(waitingForLogin.count)개는 다음 로그인에 적용됩니다")
                             .font(.caption)
-                        Text("제어 센터가 그리는 아이콘입니다. 자리는 이미 기록해 뒀지만, "
-                             + "제어 센터를 껐다 켜는 일은 하지 않습니다.")
+                        Text("제어 센터는 껐다 켜지 않습니다. 자리는 이미 기록해 뒀습니다.")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -323,12 +322,11 @@ struct QuickPanelView: View {
     /// ZipBar's own position. Separated from the icon rows because it is
     /// the one move that applies immediately — we create these items, so we
     /// can make them again — and because it needs no restart to explain.
-    private var selfMoveRow: some View {
-        HStack(spacing: 8) {
-            Text("SlimeZIP 위치")
+    private var utilityRow: some View {
+        HStack(spacing: 10) {
+            Text("위치")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Spacer()
             Button {
                 onMoveSelf(SelfPlacement.step)
             } label: { Image(systemName: "chevron.left") }
@@ -339,30 +337,25 @@ struct QuickPanelView: View {
             } label: { Image(systemName: "chevron.right") }
                 .disabled(!canMoveSelf(-SelfPlacement.step))
                 .help("슬라임을 오른쪽으로")
-        }
-        .buttonStyle(.borderless)
-        .controlSize(.small)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-    }
 
-    private var footer: some View {
-        HStack(spacing: 10) {
+            Spacer(minLength: 8)
+
             if hasAlwaysHidden {
                 // Always-hidden groups do not open on a normal click, which
-                // makes their icons unreachable without dismantling the group.
-                // This is the deliberate way in.
-                Button("항상 숨김까지 보기", action: onRevealAll)
+                // makes their icons unreachable without dismantling the
+                // group. This is the deliberate way in.
+                Button("항상 숨김까지", action: onRevealAll)
                     .buttonStyle(.link)
                     .font(.caption)
             }
-            Spacer()
             Button("설정…", action: onOpenSettings)
                 .buttonStyle(.link)
                 .font(.caption)
         }
+        .buttonStyle(.borderless)
+        .controlSize(.small)
         .padding(.horizontal, 14)
-        .padding(.vertical, 9)
+        .padding(.vertical, 7)
     }
 
     /// Who made this, and where to find them.
