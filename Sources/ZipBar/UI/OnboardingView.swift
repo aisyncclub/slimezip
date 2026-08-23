@@ -23,7 +23,7 @@ struct OnboardingView: View {
     private let steps: [Step] = [
         Step(
             slimeStage: 1, symbol: nil,
-            title: "메뉴바의 슬라임이 ZipBar입니다",
+            title: "메뉴바의 슬라임이 SlimeZIP입니다",
             detail: "숨긴 아이콘이 없으면 한 마리가 둥글게 쉬고 있습니다. "
                   + "가끔 숨을 쉬고 눈을 깜빡입니다."
         ),

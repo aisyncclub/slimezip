@@ -430,7 +430,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 SlimeDecor.Portrait(stage: 1, height: 26, animated: false)
                     .frame(width: 34)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("메뉴바의 슬라임이 ZipBar입니다").font(.headline)
+                    Text("메뉴바의 슬라임이 SlimeZIP입니다").font(.headline)
                     Text("숨긴 아이콘이 없으면 한 마리가 둥글게 쉬고 있습니다.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
@@ -581,15 +581,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             StatusItemGlyph.apply(
                 to: button, symbolName: "rectangle.compress.vertical",
-                fallbackText: "ZB", accessibilityDescription: "ZipBar")
+                fallbackText: "SZ", accessibilityDescription: "SlimeZIP")
         }
 
         let collapsed = engine.layout.groups.contains { engine.collapseState[$0.id] == true }
         let owned = inventory.held.count
         button.toolTip = hidden == 0
-            ? (owned == 0 ? "ZipBar — 숨겨진 아이콘 없음" : "ZipBar — \(owned)개 꺼내 둠")
-            : "ZipBar — \(hidden)개 숨김\(inventory.hasActivity ? " · 변화 있음" : "")"
-        button.setAccessibilityLabel("ZipBar, \(hidden)개 숨김, \(collapsed ? "접힘" : "펼침")")
+            ? (owned == 0 ? "SlimeZIP — 숨겨진 아이콘 없음" : "SlimeZIP — \(owned)개 꺼내 둠")
+            : "SlimeZIP — \(hidden)개 숨김\(inventory.hasActivity ? " · 변화 있음" : "")"
+        button.setAccessibilityLabel("SlimeZIP, \(hidden)개 숨김, \(collapsed ? "접힘" : "펼침")")
     }
 
     @objc private func slimeClicked() {
@@ -779,7 +779,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.target = self
         menu.addItem(settings)
 
-        let quit = NSMenuItem(title: "ZipBar 종료", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "SlimeZIP 종료", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
 
@@ -819,7 +819,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "ZipBar 설정"
+        window.title = "SlimeZIP 설정"
         window.contentViewController = NSHostingController(rootView: root)
         window.center()
         window.isReleasedWhenClosed = false

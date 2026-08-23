@@ -1,10 +1,10 @@
 #!/bin/bash
-# Cut a ZipBar release: build, zip, publish to GitHub Releases.
+# Cut a SlimeZIP release: build, zip, publish to GitHub Releases.
 #
 #   ./scripts/release.sh v0.1.0
 #
 # The zip this produces is what scripts/install.sh downloads, so the two
-# have to agree on one thing: the archive must contain ZipBar.app at its
+# have to agree on one thing: the archive must contain SlimeZIP.app at its
 # top level.
 set -euo pipefail
 
@@ -14,8 +14,8 @@ TAG="${1:-}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-APP="$ROOT/dist/ZipBar.app"
-ZIP="$ROOT/dist/ZipBar-$TAG.zip"
+APP="$ROOT/dist/SlimeZIP.app"
+ZIP="$ROOT/dist/SlimeZIP-$TAG.zip"
 
 echo "==> release 빌드"
 ./scripts/build-app.sh release
@@ -39,7 +39,7 @@ spctl -a -vvv "$APP" 2>&1 | sed 's/^/    /' || \
 
 echo "==> GitHub 릴리스 생성 — $TAG"
 gh release create "$TAG" "$ZIP" \
-  --title "ZipBar $TAG" \
+  --title "SlimeZIP $TAG" \
   --notes "설치:
 
 \`\`\`bash

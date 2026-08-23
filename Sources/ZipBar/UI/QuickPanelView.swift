@@ -220,7 +220,7 @@ struct QuickPanelView: View {
     /// can make them again — and because it needs no restart to explain.
     private var selfMoveRow: some View {
         HStack(spacing: 8) {
-            Text("ZipBar 위치")
+            Text("SlimeZIP 위치")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()

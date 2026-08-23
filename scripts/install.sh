@@ -1,5 +1,5 @@
 #!/bin/bash
-# One-line installer for ZipBar.
+# One-line installer for SlimeZIP.
 #
 #   curl -fsSL https://raw.githubusercontent.com/aisyncclub/zipbar/master/scripts/install.sh | bash
 #
@@ -23,7 +23,8 @@
 set -euo pipefail
 
 REPO="aisyncclub/zipbar"
-APP="/Applications/ZipBar.app"
+APP="/Applications/SlimeZIP.app"
+LEGACY="/Applications/ZipBar.app"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -38,7 +39,7 @@ MAJOR="$(sw_vers -productVersion | cut -d. -f1)"
 
 say "최신 릴리스 확인"
 URL="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" \
-  | grep -o '"browser_download_url": *"[^"]*ZipBar[^"]*\.zip"' \
+  | grep -o '"browser_download_url": *"[^"]*\.zip"' \
   | head -1 | cut -d'"' -f4)"
 [ -n "$URL" ] || die "릴리스를 찾지 못했습니다. https://github.com/$REPO/releases 를 확인해 주세요."
 
@@ -48,23 +49,30 @@ curl -fL# "$URL" -o "$TMP/ZipBar.zip"
 say "압축 해제"
 ditto -x -k "$TMP/ZipBar.zip" "$TMP/unpacked"
 # ditto's --sequesterRsrc puts a mirrored __MACOSX tree beside the bundle,
-# so an unqualified find can return the wrong ZipBar.app. Take the expected
+# so an unqualified find can return the wrong bundle. Take the expected
 # path first and only fall back to a search that skips that tree.
-SRC="$TMP/unpacked/ZipBar.app"
-[ -d "$SRC" ] || SRC="$(find "$TMP/unpacked" -maxdepth 3 -name 'ZipBar.app' \
+SRC="$TMP/unpacked/SlimeZIP.app"
+[ -d "$SRC" ] || SRC="$(find "$TMP/unpacked" -maxdepth 3 -name '*.app' \
   -not -path '*/__MACOSX/*' -print -quit)"
-[ -n "$SRC" ] || die "압축 안에 ZipBar.app이 없습니다."
+[ -n "$SRC" ] || die "압축 안에 앱이 없습니다."
 
 # A running copy cannot be replaced cleanly, and the old process would keep
 # drawing its status items next to the new one's.
+# The executable inside the bundle is still named ZipBar, so pgrep keeps
+# working across the rename. Quitting goes by bundle id rather than by
+# name — AppleScript resolves names against the display name, which just
+# changed, and the id is the one thing that did not.
 if pgrep -x ZipBar >/dev/null 2>&1; then
-  say "실행 중인 ZipBar 종료"
-  osascript -e 'quit app "ZipBar"' 2>/dev/null || pkill -x ZipBar || true
+  say "실행 중인 SlimeZIP 종료"
+  osascript -e 'quit app id "com.zipbar.ZipBar"' 2>/dev/null || pkill -x ZipBar || true
   sleep 1
 fi
 
 say "설치 — $APP"
 rm -rf "$APP"
+# Installs from before the rename left a second copy under the old name;
+# both would draw their own status item.
+[ -d "$LEGACY" ] && rm -rf "$LEGACY" && say "이전 이름의 앱 제거 — $LEGACY"
 ditto "$SRC" "$APP"
 
 say "다운로드 격리 해제"
@@ -78,7 +86,7 @@ cat <<'DONE'
 설치 끝. 메뉴바 오른쪽에 슬라임이 하나 생깁니다.
 
   다음 한 가지만 더:
-  시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용에서 ZipBar를 켜 주세요.
+  시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용에서 SlimeZIP을 켜 주세요.
   이 권한이 없으면 어느 아이콘이 어느 앱 것인지 읽을 수 없어 목록이 비어 보입니다.
 
 DONE

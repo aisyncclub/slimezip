@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="img/appicon.png" width="104" alt="ZipBar">
+<img src="img/appicon.png" width="104" alt="SlimeZIP">
 
-# ZipBar 설치 가이드
+# SlimeZIP 설치 가이드
 
 **맥 메뉴바 아이콘을 슬라임이 물어 정리해 주는 앱**
 
@@ -10,7 +10,7 @@
 
 </div>
 
-<img src="img/hero.png" alt="ZipBar 없이 아이콘이 잘려 나가는 메뉴바와, ZipBar를 켜서 슬라임 하나가 나머지를 물고 있는 메뉴바">
+<img src="img/hero.png" alt="SlimeZIP 없이 아이콘이 잘려 나가는 메뉴바와, SlimeZIP을 켜서 슬라임 하나가 나머지를 물고 있는 메뉴바">
 
 <br>
 
@@ -33,15 +33,15 @@
 
 ### 1단계 — 파일 받기
 
-[**릴리스 페이지**](https://github.com/aisyncclub/zipbar/releases/latest)로 가서 `ZipBar-*.zip`을 내려받습니다.
+[**릴리스 페이지**](https://github.com/aisyncclub/zipbar/releases/latest)로 가서 `SlimeZIP-*.zip`을 내려받습니다.
 
 ### 2단계 — 압축 풀기
 
-받은 파일을 두 번 누르면 `ZipBar.app`이 나옵니다.
+받은 파일을 두 번 누르면 `SlimeZIP.app`이 나옵니다.
 
 ### 3단계 — 응용 프로그램으로 옮기기
 
-`ZipBar.app`을 **응용 프로그램** 폴더로 끌어다 놓습니다.
+`SlimeZIP.app`을 **응용 프로그램** 폴더로 끌어다 놓습니다.
 
 > Finder 사이드바에 "응용 프로그램"이 없으면 `⇧⌘A`로 열 수 있습니다.
 
@@ -49,12 +49,12 @@
 
 두 번 눌러 봅니다. **여기서 macOS가 한 번 막습니다.**
 
-> **"ZipBar이(가) 손상되었기 때문에 열 수 없습니다"**
+> **"SlimeZIP이(가) 손상되었기 때문에 열 수 없습니다"**
 > 또는 **"확인되지 않은 개발자가 배포했기 때문에 열 수 없습니다"**
 
 **앱이 실제로 손상된 게 아닙니다.** macOS는 인터넷에서 받은 모든 파일에 표시를 붙이고,
 애플의 공증(notarization)을 받지 않은 앱이 그 표시를 달고 있으면 실행을 막습니다.
-공증에는 연 $99짜리 애플 개발자 계정이 필요한데, ZipBar는 아직 받지 않았습니다.
+공증에는 연 $99짜리 애플 개발자 계정이 필요한데, SlimeZIP은 아직 받지 않았습니다.
 
 ### 5단계 — 한 번만 허용하기
 
@@ -62,7 +62,7 @@
 <tr><td width="40"><b>1</b></td><td> <b>시스템 설정</b>을 엽니다 (<code>⌘Space</code> → "시스템 설정")</td></tr>
 <tr><td><b>2</b></td><td>왼쪽에서 <b>개인정보 보호 및 보안</b>을 고릅니다</td></tr>
 <tr><td><b>3</b></td><td>오른쪽을 <b>맨 아래까지</b> 내립니다 — <b>보안</b> 항목이 있습니다</td></tr>
-<tr><td><b>4</b></td><td>"ZipBar이(가) 차단되었습니다" 옆의 <b>확인 없이 열기</b>를 누릅니다</td></tr>
+<tr><td><b>4</b></td><td>"SlimeZIP이(가) 차단되었습니다" 옆의 <b>확인 없이 열기</b>를 누릅니다</td></tr>
 <tr><td><b>5</b></td><td><b>열기</b>를 누르고 맥 암호를 입력합니다</td></tr>
 </table>
 
@@ -82,7 +82,7 @@
 
 앱을 처음 실행하면 대화상자가 뜹니다. 놓쳤다면 직접 켜면 됩니다.
 
-**시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용 → ZipBar 켜기**
+**시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용 → SlimeZIP 켜기**
 
 ### 왜 필요한가요
 
@@ -97,7 +97,7 @@ macOS 26부터 메뉴바 아이콘을 **제어 센터가 대신 그립니다.** 
 | 숨기기 · 꺼내기 — 동작함 | 숨기기 · 꺼내기 — 동작함 |
 | 목록 — **비어 있음** | 목록 — **앱 이름까지 표시** |
 
-ZipBar는 이 권한으로 **읽기만** 합니다. 키 입력을 가로채거나 기록하지 않습니다.
+SlimeZIP은 이 권한으로 **읽기만** 합니다. 키 입력을 가로채거나 기록하지 않습니다.
 [소스](https://github.com/aisyncclub/zipbar/tree/master/Sources/ZipBarKit/Services)에서 확인하실 수 있습니다.
 
 ---
@@ -125,7 +125,7 @@ ZipBar는 이 권한으로 **읽기만** 합니다. 키 입력을 가로채거�
 ### 처음 한 번은 재시작이 필요합니다
 
 어떤 앱의 아이콘을 처음 자리 잡을 때, **그 앱을 한 번 재시작**해야 합니다.
-macOS가 아이콘 위치를 앱이 시작할 때만 읽기 때문입니다. ZipBar가 대신 종료하고
+macOS가 아이콘 위치를 앱이 시작할 때만 읽기 때문입니다. SlimeZIP이 대신 종료하고
 다시 켜 주니 버튼만 누르시면 됩니다.
 
 **한 번만 하면 됩니다.** 그 뒤로는 클릭 즉시 감췄다 꺼냈다 합니다.
@@ -139,16 +139,16 @@ macOS가 아이콘 위치를 앱이 시작할 때만 읽기 때문입니다. Zip
 
 <br>
 
-메뉴바가 이미 꽉 차서 ZipBar 자기 아이콘이 화면 밖으로 밀렸을 수 있습니다.
+메뉴바가 이미 꽉 차서 SlimeZIP 자기 아이콘이 화면 밖으로 밀렸을 수 있습니다.
 
 1. 다른 앱 몇 개를 종료해 메뉴바에 자리를 만듭니다
-2. ZipBar를 다시 실행합니다
+2. SlimeZIP을 다시 실행합니다
 
 그래도 안 보이면 저장된 위치가 화면 밖을 가리키고 있을 수 있습니다. 초기화하세요.
 
 ```bash
 defaults delete com.zipbar.ZipBar
-open /Applications/ZipBar.app
+open /Applications/SlimeZIP.app
 ```
 
 </details>
@@ -162,7 +162,7 @@ open /Applications/ZipBar.app
 그래도 안 되면 터미널에서 표시를 직접 지울 수 있습니다.
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/ZipBar.app
+xattr -dr com.apple.quarantine /Applications/SlimeZIP.app
 ```
 
 이 명령은 "인터넷에서 받았음" 표시를 지웁니다. 진짜 안전장치이니,
@@ -178,7 +178,7 @@ xattr -dr com.apple.quarantine /Applications/ZipBar.app
 접근성 권한이 꺼져 있습니다. [2번](#2-접근성-권한-켜기)을 봐 주세요.
 
 시스템 설정에서 토글은 켜져 있는데도 비어 있다면, 껐다가 다시 켠 뒤
-ZipBar를 재시작해 보세요. 앱을 새 버전으로 덮어썼을 때 가끔 이렇게 됩니다.
+SlimeZIP을 재시작해 보세요. 앱을 새 버전으로 덮어썼을 때 가끔 이렇게 됩니다.
 
 </details>
 
@@ -188,11 +188,11 @@ ZipBar를 재시작해 보세요. 앱을 새 버전으로 덮어썼을 때 가�
 <br>
 
 그 앱을 아직 재시작하지 않았을 때 그렇습니다. macOS는 아이콘 위치를
-앱이 시작하는 순간에만 읽습니다. 패널의 **적용** 버튼을 누르면 ZipBar가
+앱이 시작하는 순간에만 읽습니다. 패널의 **적용** 버튼을 누르면 SlimeZIP이
 해당 앱을 종료했다가 다시 켭니다.
 
 일부 앱은 종료할 때 자기 위치를 다시 저장해서 우리가 쓴 값을 덮어씁니다.
-ZipBar는 종료가 끝난 뒤 다시 쓰는 방식으로 이걸 피합니다. 그래도 안 되는
+SlimeZIP은 종료가 끝난 뒤 다시 쓰는 방식으로 이걸 피합니다. 그래도 안 되는
 앱이 있으면 [이슈로 알려 주세요](https://github.com/aisyncclub/zipbar/issues).
 
 </details>
@@ -213,8 +213,8 @@ ZipBar는 종료가 끝난 뒤 다시 쓰는 방식으로 이걸 피합니다. �
 <br>
 
 ```bash
-osascript -e 'quit app "ZipBar"'
-rm -rf /Applications/ZipBar.app
+osascript -e 'quit app "SlimeZIP"'
+rm -rf /Applications/SlimeZIP.app
 defaults delete com.zipbar.ZipBar
 ```
 
@@ -261,10 +261,10 @@ xcode-select --install
 git clone https://github.com/aisyncclub/zipbar.git
 cd zipbar
 ./scripts/build-app.sh
-open dist/ZipBar.app
+open dist/SlimeZIP.app
 ```
 
-`dist/ZipBar.app`이 만들어집니다.
+`dist/SlimeZIP.app`이 만들어집니다.
 
 ### 서명 인증서 (반복해서 빌드하신다면)
 
@@ -312,6 +312,6 @@ OS 업데이트 후 무엇이 깨졌는지 확인합니다. **베타가 나오�
 
 <br>
 
-<sub>ZipBar · macOS 14+ · 무료 · 오픈소스</sub>
+<sub>SlimeZIP · macOS 14+ · 무료 · 오픈소스</sub>
 
 </div>

@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/img/appicon.png" width="120" alt="ZipBar">
+<img src="docs/img/appicon.png" width="120" alt="SlimeZIP">
 
-# ZipBar
+# SlimeZIP
 
 ### 아이콘 찾으려고 메뉴바 훑지 마세요
 
@@ -19,7 +19,7 @@
 
 <br>
 
-<img src="docs/img/hero.png" alt="ZipBar 없이 아이콘이 잘려 나가는 메뉴바와, ZipBar를 켜서 슬라임 하나가 나머지를 물고 있는 메뉴바">
+<img src="docs/img/hero.png" alt="SlimeZIP 없이 아이콘이 잘려 나가는 메뉴바와, SlimeZIP을 켜서 슬라임 하나가 나머지를 물고 있는 메뉴바">
 
 <br>
 
@@ -33,7 +33,7 @@
 | **어느 앱 것인지 모릅니다** | macOS 26부터 제어 센터가 아이콘을 대신 그려서, 창만 봐서는 주인을 알 수 없습니다. |
 | **옮기려면 ⌘드래그뿐** | 하나씩 끌어서 옮기고, 어디에 뒀는지 다시 잊습니다. |
 
-## ZipBar가 하는 일
+## SlimeZIP이 하는 일
 
 <table>
 <tr>
@@ -80,10 +80,10 @@ Tailscale인지 카카오톡인지 이름으로 보여 줍니다.
 
 ### 내려받아서
 
-1. [릴리스](https://github.com/aisyncclub/zipbar/releases/latest)에서 `ZipBar-*.zip`을 받습니다
-2. 압축을 풀고 `ZipBar.app`을 **응용 프로그램**으로 옮깁니다
+1. [릴리스](https://github.com/aisyncclub/zipbar/releases/latest)에서 `SlimeZIP-*.zip`을 받습니다
+2. 압축을 풀고 `SlimeZIP.app`을 **응용 프로그램**으로 옮깁니다
 3. 처음 열면 macOS가 막습니다 → **시스템 설정 → 개인정보 보호 및 보안** 맨 아래 **확인 없이 열기**
-4. **시스템 설정 → 손쉬운 사용**에서 ZipBar를 켭니다
+4. **시스템 설정 → 손쉬운 사용**에서 SlimeZIP을 켭니다
 
 > 우클릭 → 열기는 macOS 세쿼이아부터 안 됩니다. 3번의 시스템 설정 경로가 유일합니다.
 
@@ -102,7 +102,7 @@ macOS가 이 영역을 두 번 연속 깨뜨렸습니다. macOS 26 Tahoe가 윈�
 Bartender · Ice · Barbee · Thaw · BetterTouchTool이 전부 동작 불능이 됐습니다.
 측정 근거는 [docs/RESEARCH.md](docs/RESEARCH.md)에 있습니다.
 
-그래서 ZipBar의 설계 원칙은 **런타임 능력 탐지**입니다. 기능을 하드코딩하지 않고
+그래서 SlimeZIP의 설계 원칙은 **런타임 능력 탐지**입니다. 기능을 하드코딩하지 않고
 OS에 물어본 뒤 되는 것만 UI에 노출합니다. 안 되면 조용히 실패하는 대신 배너로 말합니다.
 
 ```
@@ -144,7 +144,7 @@ Xcode는 필요 없습니다. Command Line Tools만으로 빌드됩니다.
 
 ```bash
 swift build && swift test     # 빌드 + 테스트
-./scripts/build-app.sh        # dist/ZipBar.app 만들기
+./scripts/build-app.sh        # dist/SlimeZIP.app 만들기
 ./scripts/release.sh v0.1.0   # 빌드 + 압축 + GitHub 릴리스
 ```
 
@@ -181,6 +181,6 @@ Homebrew cask 등록도 열립니다.
 
 **문제가 생기면 [이슈로 알려 주세요](https://github.com/aisyncclub/zipbar/issues).**
 
-<sub>ZipBar · macOS 14+ · 무료 · 오픈소스</sub>
+<sub>SlimeZIP · macOS 14+ · 무료 · 오픈소스</sub>
 
 </div>

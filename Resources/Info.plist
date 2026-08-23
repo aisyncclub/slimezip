@@ -12,8 +12,10 @@
 	<string>com.zipbar.ZipBar</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleDisplayName</key>
+	<string>SlimeZIP</string>
 	<key>CFBundleName</key>
-	<string>ZipBar</string>
+	<string>SlimeZIP</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -25,6 +27,6 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>ZipBar</string>
+	<string>SlimeZIP</string>
 </dict>
 </plist>

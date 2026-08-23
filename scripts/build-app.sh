@@ -1,5 +1,5 @@
 #!/bin/bash
-# Assemble ZipBar.app from the SwiftPM binary.
+# Assemble SlimeZIP.app from the SwiftPM binary.
 #
 # Works with plain Command Line Tools — no Xcode project required. Xcode is
 # only needed later, for notarization (`xcrun notarytool`) and for building
@@ -11,7 +11,7 @@ set -euo pipefail
 
 CONFIG="${1:-debug}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP="$ROOT/dist/ZipBar.app"
+APP="$ROOT/dist/SlimeZIP.app"
 
 cd "$ROOT"
 

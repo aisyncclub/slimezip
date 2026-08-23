@@ -1,0 +1,39 @@
+# 랜딩페이지를 GitHub Pages로 배포한다.
+#
+# 브랜치 폴더 방식(루트 또는 /docs) 대신 Actions로 올리는 이유: 사이트는
+# web/ 에 있고, /docs 는 이미 설치 가이드와 리서치 문서가 쓰고 있다. 폴더
+# 방식을 쓰려면 둘 중 하나를 옮겨야 하는데, 옮기면 지금 공개된 문서 링크가
+# 전부 깨진다. 아티팩트 방식은 아무것도 옮기지 않는다.
+name: Pages
+
+on:
+  push:
+    branches: [master]
+    paths: ['web/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포는 한 번에 하나만. 진행 중인 배포를 취소하지는 않는다 — 중간에 끊으면
+# 사이트가 반쯤 갱신된 상태로 남는다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -96,7 +96,7 @@ struct IconListView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 380)
-                Button("ZipBar 재시작") { SelfRelauncher.relaunch() }
+                Button("SlimeZIP 재시작") { SelfRelauncher.relaunch() }
             }
             .padding(.top, 6)
         }
