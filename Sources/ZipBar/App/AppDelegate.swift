@@ -413,9 +413,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// draws the real hierarchy instead: offscreen, needing no screen
     /// recording permission, and with none of the user's desktop in frame.
     private func capturePanel(to path: String) {
+        // Also to a file beside the image: launching through LaunchServices
+        // is what gives the app its own accessibility grant, and that is the
+        // one way of starting it that does not hand stderr back to a shell.
+        var lines: [String] = []
         func report(_ line: String) {
             FileHandle.standardError.write(Data((line + "\n").utf8))
+            lines.append(line)
         }
+        defer { try? lines.joined(separator: "\n").write(
+            toFile: path + ".txt", atomically: true, encoding: .utf8) }
         guard let view = quickPanel?.contentViewController?.view else {
             report("panelShot=none 패널이 열리지 않았습니다")
             return
@@ -433,6 +440,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? data.write(to: URL(fileURLWithPath: path))
         report("panelShot=\(path) size=\(Int(bounds.width))x\(Int(bounds.height)) "
                + "rows=\(inventory.items.count)")
+
+        // Where the popover actually landed, against the screen it landed on.
+        // "It looks like it goes off the edge" is a claim about coordinates,
+        // so print the coordinates rather than eyeball the picture.
+        if let window = view.window, let screen = window.screen ?? NSScreen.main {
+            let w = window.frame, v = screen.visibleFrame
+            report("panelFrame=\(Int(w.minX)),\(Int(w.minY)) \(Int(w.width))x\(Int(w.height)) "
+                   + "screen=\(Int(v.minX)),\(Int(v.minY)) \(Int(v.width))x\(Int(v.height)) "
+                   + "overflowRight=\(Int(max(0, w.maxX - v.maxX))) "
+                   + "overflowLeft=\(Int(max(0, v.minX - w.minX))) "
+                   + "overflowBottom=\(Int(max(0, v.minY - w.minY)))")
+        }
     }
 
     private func renderSettingsPreview(to path: String) {
@@ -707,9 +726,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // popover belonging to an inactive app cannot take keyboard input.
         NSApp.activate(ignoringOtherApps: true)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        constrainPanelToScreen()
+        // Again after the run loop turns: the popover finishes sizing itself
+        // asynchronously, and a correction applied to a stale frame is no
+        // correction at all.
+        DispatchQueue.main.async { [weak self] in self?.constrainPanelToScreen() }
         quickPanel = popover
         watchForDismissal()
 
+    }
+
+    /// Keeps the panel inside the display it opened on.
+    ///
+    /// The popover centres itself on the status item, and the item sits close
+    /// to the right edge by design — it is ours, so it goes last. Measured at
+    /// the current position, a 426pt panel's right edge lands 3pt inside a
+    /// 1920pt screen; one nudge further right and half of it is gone. Three
+    /// displays make it likelier still.
+    ///
+    /// Corrected after the fact rather than by pre-offsetting the anchor.
+    /// AppKit may already have nudged the popover on its own, and there is no
+    /// way to ask whether it did — measuring where the window actually landed
+    /// cannot double-count a shift that was already applied.
+    private func constrainPanelToScreen() {
+        guard let window = quickPanel?.contentViewController?.view.window,
+              let screen = window.screen ?? NSScreen.main else { return }
+        let margin: CGFloat = 8
+        let visible = screen.visibleFrame
+        let frame = window.frame
+        var origin = frame.origin
+        origin.x = min(origin.x, visible.maxX - frame.width - margin)
+        origin.x = max(origin.x, visible.minX + margin)
+        origin.y = max(origin.y, visible.minY + margin)
+        guard origin != frame.origin else { return }
+        window.setFrameOrigin(origin)
     }
 
     /// Closes the panel when the user clicks away from it.

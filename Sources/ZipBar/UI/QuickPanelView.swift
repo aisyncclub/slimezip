@@ -294,39 +294,48 @@ struct QuickPanelView: View {
 
     /// Who made this, and where to find them.
     ///
-    /// A plain `Link` would look like body text here; the whole strip is the
-    /// target instead, so it behaves like the footer bar it looks like.
+    /// The text and the two marks are separate buttons rather than one strip
+    /// with links inside it: a button cannot be nested in a button, and each
+    /// of the three goes somewhere different.
     private var credit: some View {
-        Button {
-            // Opening in the default browser rather than in-app: this is a
-            // link off to somewhere else, and a menu bar utility has no
-            // business hosting a web view.
-            if let url = URL(string: Self.creatorURL) {
-                NSWorkspace.shared.open(url)
+        HStack(spacing: 10) {
+            Button { Self.open(Self.creatorURL) } label: {
+                HStack(spacing: 5) {
+                    Text("제작자 Ai싱크클럽")
+                        .fontWeight(.semibold)
+                    Text("- 싱크 제작")
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 8, weight: .semibold))
+                }
+                .font(.caption)
+                .foregroundStyle(hoveringCredit ? Color.accentColor : Color.secondary)
+                // Without this the row is clickable only where the glyphs
+                // are, which for a strip of small text is most of it missing.
+                .contentShape(Rectangle())
             }
-        } label: {
-            HStack(spacing: 6) {
-                Text("제작자 Ai싱크클럽")
-                    .fontWeight(.semibold)
-                Text("- 싱크 제작")
-                Spacer(minLength: 6)
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 9, weight: .semibold))
-            }
-            .font(.caption)
-            .foregroundStyle(hoveringCredit ? Color.accentColor : Color.secondary)
-            // Without this the row is only clickable where the glyphs are,
-            // which for a strip of small text is most of it missing.
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .onHover { hoveringCredit = $0 }
+            .help(Self.creatorURL)
+
+            Spacer(minLength: 8)
+
+            MarkButton(mark: .youtube, url: Self.youTubeURL, label: "유튜브")
+            MarkButton(mark: .threads, url: Self.threadsURL, label: "쓰레드")
         }
-        .buttonStyle(.plain)
         .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .onHover { hoveringCredit = $0 }
-        .help(Self.creatorURL)
+        .padding(.vertical, 8)
+    }
+
+    private static func open(_ string: String) {
+        // The default browser, not an in-app view: these go somewhere else,
+        // and a menu bar utility has no business hosting a web view.
+        guard let url = URL(string: string) else { return }
+        NSWorkspace.shared.open(url)
     }
 
     private static let creatorURL = "https://litt.ly/aisyncclub"
+    private static let youTubeURL = "https://www.youtube.com/@AISyncClub"
+    private static let threadsURL = "https://www.threads.com/@ai_sync_club"
 
     // MARK: - Actions
 
