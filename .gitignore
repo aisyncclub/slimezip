@@ -11,3 +11,6 @@ web/node_modules/
 web/.next/
 web/.vercel/
 .gstack/
+
+# 로컬 도구 상태 (개인 경로가 들어 있음)
+.planning/
