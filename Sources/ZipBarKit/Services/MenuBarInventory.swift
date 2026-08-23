@@ -164,9 +164,35 @@ public final class MenuBarInventory: ObservableObject {
         objectWillChange.send()
     }
 
-    /// A written position is theoretical until its app restarts.
-    public func needsRestart(_ item: Item) -> Bool {
+    /// Apps whose menu bar items we can rewrite but must not restart.
+    ///
+    /// On macOS 26 the system draws Wi-Fi, Bluetooth, Battery, Sound and the
+    /// rest through Control Center. Their stored positions live in Control
+    /// Center's preferences and take our writes like anyone else's — the value
+    /// we wrote for Battery is still sitting there — but quitting the process
+    /// that draws half the menu bar to make one icon move is not a trade this
+    /// app gets to make on the user's behalf. Left alone, the write applies
+    /// when that agent next starts, which in practice means the next login.
+    public static let systemManagedBundles: Set<String> = [
+        "com.apple.controlcenter",
+        "com.apple.systemuiserver",
+        "com.apple.TextInputMenuAgent",
+        "com.apple.Spotlight",
+    ]
+
+    /// Whether this icon belongs to one of those agents.
+    public func isSystemManaged(_ item: Item) -> Bool {
         guard let bundle = item.bundleIdentifier else { return false }
+        return Self.systemManagedBundles.contains(bundle)
+    }
+
+    /// A written position is theoretical until its app restarts.
+    ///
+    /// False for system agents: not because the move is already applied, but
+    /// because there is no restart on offer. Their pending moves wait for the
+    /// next login instead of sitting behind a button that cannot work.
+    public func needsRestart(_ item: Item) -> Bool {
+        guard let bundle = item.bundleIdentifier, !isSystemManaged(item) else { return false }
         return restarter.isRunning(bundle)
     }
 
@@ -175,20 +201,54 @@ public final class MenuBarInventory: ObservableObject {
             completion(.notRunning)
             return
         }
-        let record = pendingStore.record(for: item.preferenceKey)
+        restartApp(bundle, completion: completion)
+    }
+
+    /// Restarts one app and applies every move waiting on it.
+    ///
+    /// Per app, not per icon. Restarting once per moved icon meant an app that
+    /// publishes two status items — Claude does — was quit and relaunched
+    /// twice for a single trip through the panel, which is most of what
+    /// "재시작을 계속 해야 한다" was describing. One quit now settles all of
+    /// that app's pending moves at once.
+    public func restartApp(
+        _ bundle: String, completion: @escaping (AppRestarter.Outcome) -> Void
+    ) {
+        guard !Self.systemManagedBundles.contains(bundle) else {
+            completion(.notRunning)
+            return
+        }
+        let waiting = pendingStore.all().values.filter { $0.bundleIdentifier == bundle }
         restarter.restart(bundle, beforeRelaunch: { [weak self] in
             // Written here, after the app has exited, because some apps save
             // their live position on the way out and overwrite ours. Outlook
             // does; Magnet does not — measured both ways. Writing in the gap
             // between quit and launch is the only moment that holds for both.
-            guard let self, let record else { return }
-            self.arranger.write(record.targetValue,
-                                to: record.positionKey,
-                                in: record.bundleIdentifier)
+            guard let self else { return }
+            for record in waiting {
+                self.arranger.write(record.targetValue,
+                                    to: record.positionKey,
+                                    in: record.bundleIdentifier)
+            }
         }, completion: { [weak self] outcome in
             if outcome == .restarted { self?.refresh() }
             completion(outcome)
         })
+    }
+
+    /// The apps that have moves waiting on a restart, each listed once.
+    public func appsAwaitingRestart(among items: [Item]) -> [(bundle: String, name: String, count: Int)] {
+        var order: [String] = []
+        var names: [String: String] = [:]
+        var counts: [String: Int] = [:]
+        for item in items {
+            guard let bundle = item.bundleIdentifier,
+                  pendingMove(for: item) != nil,
+                  needsRestart(item) else { continue }
+            if counts[bundle] == nil { order.append(bundle); names[bundle] = item.ownerName }
+            counts[bundle, default: 0] += 1
+        }
+        return order.map { ($0, names[$0] ?? $0, counts[$0] ?? 0) }
     }
 
     // MARK: - Preferences

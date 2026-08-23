@@ -52,9 +52,24 @@ struct QuickPanelView: View {
         inventory.items.filter { inventory.pendingMove(for: $0) != nil }
     }
 
+    /// Moves that a restart can settle, grouped by app — one entry per app,
+    /// however many of its icons were moved.
+    private var appsToRestart: [(bundle: String, name: String, count: Int)] {
+        inventory.appsAwaitingRestart(among: inventory.items)
+    }
+
+    /// Moves waiting on something we will not do. macOS draws Wi-Fi, Battery
+    /// and the rest through Control Center; the position is written and will
+    /// be read when that agent next starts, but quitting the process that
+    /// draws half the menu bar is not ours to do.
+    private var waitingForLogin: [MenuBarInventory.Item] {
+        waiting.filter { inventory.isSystemManaged($0) }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
+            if engine.hasToggleableGroup { revealBar }
             Divider()
 
             ScrollView {
@@ -117,13 +132,43 @@ struct QuickPanelView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            if engine.hasToggleableGroup {
-                Button(anyCollapsed ? "펼치기" : "접기", action: onToggle)
-                    .controlSize(.small)
-            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
+    }
+
+    /// The everyday action, given the size it deserves.
+    ///
+    /// This is the one that costs nothing: the group's separator inflates or
+    /// deflates and the icons appear or vanish at once, with no position
+    /// rewritten and no app restarted. The per-row 넣기/꺼내기 beside it moves
+    /// an icon across the boundary for good, which is a stored-position write
+    /// and therefore a restart — a setup step, not a daily one. Sized the
+    /// wrong way round, people reached for the expensive button all day.
+    private var revealBar: some View {
+        VStack(spacing: 4) {
+            Button(action: onToggle) {
+                HStack(spacing: 6) {
+                    Image(systemName: anyCollapsed ? "eye" : "eye.slash")
+                    Text(anyCollapsed
+                         ? (inventory.concealed.isEmpty
+                            ? "숨긴 것 꺼내 보기"
+                            : "숨긴 \(inventory.concealed.count)개 꺼내 보기")
+                         : "다시 감추기")
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 3)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+
+            Text("재시작 없이 즉시 됩니다")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 12)
     }
 
     /// Says what the toggle will do, and says nothing misleading when there is
@@ -170,9 +215,9 @@ struct QuickPanelView: View {
             Spacer(minLength: 6)
 
             if inventory.pendingMove(for: item) != nil {
-                Text("대기")
+                Text(inventory.isSystemManaged(item) ? "다음 로그인" : "재시작 대기")
                     .font(.caption2)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(inventory.isSystemManaged(item) ? Color.secondary : Color.orange)
                 Button("취소") { inventory.cancelMove(for: item) }
                     .buttonStyle(.borderless)
                     .controlSize(.small)
@@ -220,27 +265,55 @@ struct QuickPanelView: View {
 
     // MARK: - Apply
 
+    @ViewBuilder
     private var applyStrip: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Image(systemName: "clock.arrow.circlepath")
-                    .foregroundStyle(.orange)
-                Text("\(waiting.count)개가 앱 재시작을 기다립니다")
-                    .font(.caption)
-                Spacer()
-                Button("적용") { onRestart(waiting) }
-                    .controlSize(.small)
-                    .buttonStyle(.borderedProminent)
+        VStack(alignment: .leading, spacing: 8) {
+            if !appsToRestart.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .foregroundStyle(.orange)
+                    // Counted in apps, because that is what the button does.
+                    // Counting icons overstated it: two icons from one app is
+                    // one quit, not two.
+                    Text("\(appsToRestart.count)개 앱을 재시작하면 적용됩니다")
+                        .font(.caption)
+                    Spacer()
+                    Button("적용") { onRestart(waiting) }
+                        .controlSize(.small)
+                        .buttonStyle(.borderedProminent)
+                }
+                Text(appsToRestart.map { $0.count > 1 ? "\($0.name) (\($0.count))" : $0.name }
+                        .joined(separator: " · "))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                // The distinction that decides whether this app is tolerable
+                // to live with: a restart buys a *permanent* place for the
+                // icon. Hiding and showing after that is the slime click, and
+                // costs nothing.
+                Text("자리를 정하는 것이라 아이콘마다 한 번뿐입니다. "
+                     + "그 뒤로 감추고 꺼내는 것은 위의 접기/펼치기로 즉시 됩니다.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            // The distinction that decides whether this app is tolerable to
-            // live with: a restart buys a *permanent* place for the icon, and
-            // hiding it after that is instant. Without saying so the strip
-            // reads as "every hide costs a restart", which would be miserable.
-            Text("한 번만 하면 됩니다. 자리를 옮기는 것이라, 그 뒤로 감추고 "
-                 + "꺼내는 것은 슬라임 클릭만으로 즉시 됩니다.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+
+            if !waitingForLogin.isEmpty {
+                Divider()
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "moon.zzz")
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(waitingForLogin.count)개는 다음 로그인에 적용됩니다")
+                            .font(.caption)
+                        Text("제어 센터가 그리는 아이콘입니다. 자리는 이미 기록해 뒀지만, "
+                             + "제어 센터를 껐다 켜는 일은 하지 않습니다.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

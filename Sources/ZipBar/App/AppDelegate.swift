@@ -877,12 +877,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// menu bar at once turns the bar into a slot machine, and a single
     /// failure is easier to attribute when they go down one by one.
     private func restartSequentially(_ items: [MenuBarInventory.Item]) {
-        guard let item = items.first else {
+        // Collapsed to one entry per app before anything is quit. The list
+        // arrives as icons, and an app with two of them used to be restarted
+        // twice for one trip through the panel.
+        restartApps(inventory.appsAwaitingRestart(among: items).map(\.bundle))
+    }
+
+    /// One app at a time. Quitting half the menu bar at once turns the bar
+    /// into a slot machine, and a single failure is easier to attribute when
+    /// they go down one by one.
+    private func restartApps(_ bundles: [String]) {
+        guard let bundle = bundles.first else {
             refreshInventory()
             return
         }
-        inventory.restart(item) { [weak self] _ in
-            self?.restartSequentially(Array(items.dropFirst()))
+        inventory.restartApp(bundle) { [weak self] _ in
+            self?.restartApps(Array(bundles.dropFirst()))
         }
     }
 
