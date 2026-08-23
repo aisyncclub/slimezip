@@ -232,6 +232,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Captures the quick panel exactly as it draws, so a claim about its
+        // size or contents can be looked at instead of asserted.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_PANEL_SHOT"] == "1" {
+            let out = ProcessInfo.processInfo.environment["ZIPBAR_PANEL_OUT"]
+                ?? "/tmp/zipbar-panel.png"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.toggleQuickPanel()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    self.capturePanel(to: out)
+                    NSApp.terminate(nil)
+                }
+            }
+            return
+        }
+
         // Collapses and expands once, reporting the glyph each time — the
         // claim "the slime deflates when you let the icons out" is about the
         // drawing, so only the drawing can confirm it.
@@ -390,6 +405,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @MainActor
+    /// Writes the quick panel to a PNG, drawn by AppKit rather than described.
+    ///
+    /// `ImageRenderer` is no help here — it substitutes a "not supported"
+    /// placeholder for the ScrollView the panel is built around, which is
+    /// exactly the part worth looking at. Caching the live view's display
+    /// draws the real hierarchy instead: offscreen, needing no screen
+    /// recording permission, and with none of the user's desktop in frame.
+    private func capturePanel(to path: String) {
+        func report(_ line: String) {
+            FileHandle.standardError.write(Data((line + "\n").utf8))
+        }
+        guard let view = quickPanel?.contentViewController?.view else {
+            report("panelShot=none 패널이 열리지 않았습니다")
+            return
+        }
+        let bounds = view.bounds
+        guard let rep = view.bitmapImageRepForCachingDisplay(in: bounds) else {
+            report("panelShot=none 비트맵을 만들지 못했습니다")
+            return
+        }
+        view.cacheDisplay(in: bounds, to: rep)
+        guard let data = rep.representation(using: .png, properties: [:]) else {
+            report("panelShot=none PNG 변환에 실패했습니다")
+            return
+        }
+        try? data.write(to: URL(fileURLWithPath: path))
+        report("panelShot=\(path) size=\(Int(bounds.width))x\(Int(bounds.height)) "
+               + "rows=\(inventory.items.count)")
+    }
+
     private func renderSettingsPreview(to path: String) {
         refreshInventory()
 

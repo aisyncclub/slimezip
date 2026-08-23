@@ -32,6 +32,22 @@ struct QuickPanelView: View {
         engine.layout.groups.contains { $0.behavior == .alwaysHidden }
     }
 
+    @State private var hoveringCredit = false
+
+    /// How tall the list wants to be.
+    ///
+    /// Measured from the parts rather than guessed: a row is a 26pt icon
+    /// plus 7pt of padding either side, and a group heading is a caption
+    /// with 10pt above and 2pt below. The ceiling keeps the whole popover
+    /// under the bar on a 13" screen once the header, the apply strip and
+    /// the two footers are stacked on top of it; the floor stops an empty
+    /// bar from collapsing the panel into a sliver.
+    private var listHeight: CGFloat {
+        let rows = CGFloat(inventory.items.count) * 40
+        let headings = CGFloat(inventory.boundaries.count + 1) * 28
+        return min(max(rows + headings + 8, 140), 470)
+    }
+
     private var waiting: [MenuBarInventory.Item] {
         inventory.items.filter { inventory.pendingMove(for: $0) != nil }
     }
@@ -50,7 +66,13 @@ struct QuickPanelView: View {
                 }
                 .padding(.vertical, 4)
             }
-            .frame(maxHeight: 340)
+            // An explicit height, not a cap. A ScrollView has no ideal
+            // height of its own, so inside a size-to-fit hosting controller
+            // `maxHeight` alone let it collapse — with 34 icons in the bar
+            // the list still rendered 110pt tall and the panel came out at
+            // 320. Asking for the content's height instead makes the panel
+            // grow with what is in it.
+            .frame(height: listHeight)
 
             if !waiting.isEmpty {
                 Divider()
@@ -61,8 +83,14 @@ struct QuickPanelView: View {
             selfMoveRow
             Divider()
             footer
+            Divider()
+            credit
         }
-        .frame(width: 300)
+        // Widened from 300. At that width the name, the two reorder
+        // arrows and the in/out button sat shoulder to shoulder, and the
+        // arrows — the most-used control here — were the smallest targets
+        // on the panel.
+        .frame(width: 400)
         // No refresh here: the app populates boundaries and collapse state
         // together before showing the panel, and re-reading only half of that
         // from the view would put the two out of step.
@@ -74,7 +102,7 @@ struct QuickPanelView: View {
         HStack(spacing: 9) {
             SlimeDecor.Portrait(
                 stage: SlimeRenderer.stage(forHiddenCount: inventory.concealed.count),
-                height: 26)
+                height: 32)
             VStack(alignment: .leading, spacing: 0) {
                 // Follows the same reading as the slime beside it: an open
                 // group is holding nothing, however many icons it owns.
@@ -94,8 +122,8 @@ struct QuickPanelView: View {
                     .controlSize(.small)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
     }
 
     /// Says what the toggle will do, and says nothing misleading when there is
@@ -115,8 +143,8 @@ struct QuickPanelView: View {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
+                .padding(.horizontal, 14)
+                .padding(.top, 10)
                 .padding(.bottom, 2)
 
             ForEach(entries) { item in
@@ -127,10 +155,11 @@ struct QuickPanelView: View {
 
     private func row(_ item: MenuBarInventory.Item, currentZone: MenuBarZone) -> some View {
         HStack(spacing: 8) {
-            appIcon(for: item).frame(width: 17, height: 17)
+            appIcon(for: item).frame(width: 26, height: 26)
 
             Text(item.ownerName)
                 .lineLimit(1)
+                .font(.system(size: 13))
             if inventory.activeIDs.contains(item.id) {
                 Image(systemName: "circle.fill")
                     .font(.system(size: 5))
@@ -162,7 +191,7 @@ struct QuickPanelView: View {
                         .help("오른쪽으로")
                 }
                 .buttonStyle(.borderless)
-                .controlSize(.small)
+                .controlSize(.regular)
 
                 // One button, and it says where the icon is going. The
                 // destination is the other side of the boundary, which is what
@@ -170,11 +199,14 @@ struct QuickPanelView: View {
                 Button(currentZone == .visible ? "넣기" : "꺼내기") {
                     move(item, from: currentZone)
                 }
-                .controlSize(.small)
+                .controlSize(.regular)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 3)
+        .padding(.horizontal, 14)
+        // 3pt gave a 23pt row — under the 28pt that reads as comfortably
+        // clickable, and the rows ran together into one grey block.
+        .padding(.vertical, 7)
+        .contentShape(Rectangle())
     }
 
     private func appIcon(for item: MenuBarInventory.Item) -> Image {
@@ -210,8 +242,8 @@ struct QuickPanelView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
         .background(.orange.opacity(0.08))
     }
 
@@ -237,8 +269,8 @@ struct QuickPanelView: View {
         }
         .buttonStyle(.borderless)
         .controlSize(.small)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
     }
 
     private var footer: some View {
@@ -256,9 +288,45 @@ struct QuickPanelView: View {
                 .buttonStyle(.link)
                 .font(.caption)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
     }
+
+    /// Who made this, and where to find them.
+    ///
+    /// A plain `Link` would look like body text here; the whole strip is the
+    /// target instead, so it behaves like the footer bar it looks like.
+    private var credit: some View {
+        Button {
+            // Opening in the default browser rather than in-app: this is a
+            // link off to somewhere else, and a menu bar utility has no
+            // business hosting a web view.
+            if let url = URL(string: Self.creatorURL) {
+                NSWorkspace.shared.open(url)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text("제작자 Ai싱크클럽")
+                    .fontWeight(.semibold)
+                Text("- 싱크 제작")
+                Spacer(minLength: 6)
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .font(.caption)
+            .foregroundStyle(hoveringCredit ? Color.accentColor : Color.secondary)
+            // Without this the row is only clickable where the glyphs are,
+            // which for a strip of small text is most of it missing.
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+        .onHover { hoveringCredit = $0 }
+        .help(Self.creatorURL)
+    }
+
+    private static let creatorURL = "https://litt.ly/aisyncclub"
 
     // MARK: - Actions
 
