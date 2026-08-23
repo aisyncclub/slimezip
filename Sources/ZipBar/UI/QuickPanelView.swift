@@ -299,7 +299,7 @@ struct QuickPanelView: View {
     /// of the three goes somewhere different.
     private var credit: some View {
         HStack(spacing: 10) {
-            Button { Self.open(Self.creatorURL) } label: {
+            Button { CreatorLinks.open(CreatorLinks.home) } label: {
                 HStack(spacing: 5) {
                     Text("제작자 Ai싱크클럽")
                         .fontWeight(.semibold)
@@ -315,27 +315,18 @@ struct QuickPanelView: View {
             }
             .buttonStyle(.plain)
             .onHover { hoveringCredit = $0 }
-            .help(Self.creatorURL)
+            .help(CreatorLinks.home)
 
             Spacer(minLength: 8)
 
-            MarkButton(mark: .youtube, url: Self.youTubeURL, label: "유튜브")
-            MarkButton(mark: .threads, url: Self.threadsURL, label: "쓰레드")
+            MarkButton(mark: .youtube, url: CreatorLinks.youTube, label: "유튜브")
+            MarkButton(mark: .threads, url: CreatorLinks.threads, label: "쓰레드")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
     }
 
-    private static func open(_ string: String) {
-        // The default browser, not an in-app view: these go somewhere else,
-        // and a menu bar utility has no business hosting a web view.
-        guard let url = URL(string: string) else { return }
-        NSWorkspace.shared.open(url)
-    }
 
-    private static let creatorURL = "https://litt.ly/aisyncclub"
-    private static let youTubeURL = "https://www.youtube.com/@AISyncClub"
-    private static let threadsURL = "https://www.threads.com/@ai_sync_club"
 
     // MARK: - Actions
 

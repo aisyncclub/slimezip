@@ -43,7 +43,7 @@ public final class MenuBarEngine: ObservableObject {
                     self?.collapseState[id] = collapsed
                 }
                 strategy = instance
-                capabilities = instance.capabilities
+                capabilities = Self.withAccessibility(instance.capabilities)
                 syncCollapseState()
                 return
             } catch {
@@ -54,6 +54,37 @@ public final class MenuBarEngine: ObservableObject {
             backend: .degraded,
             notes: ["현재 macOS \(Self.osVersionString())에서 동작하는 백엔드를 찾지 못했습니다."]
         )
+    }
+
+    /// Folds in what the accessibility permission makes possible.
+    ///
+    /// The strategy's own table described the spacer mechanism and nothing
+    /// else, so the diagnostics page reported enumeration, moving and remote
+    /// clicking as unavailable while the panel was listing forty-six icons by
+    /// name and restarting apps to move them. A page that contradicts the
+    /// window next to it is worse than no page.
+    ///
+    /// Read at the moment it is asked rather than cached at launch: the user
+    /// can grant the permission while the app is running, and on first launch
+    /// they usually do.
+    static func withAccessibility(_ base: Capabilities) -> Capabilities {
+        var merged = base
+        let trusted = AXIsProcessTrusted()
+        merged.canEnumerate = trusted
+        // Moving is real but indirect: we rewrite the position macOS has
+        // stored for the icon, which it reads when that app next starts.
+        merged.canMove = trusted
+        merged.canClickRemotely = trusted
+        if trusted {
+            merged.notes.insert("아이콘을 옮기려면 그 앱을 한 번 재시작해야 합니다. "
+                                + "처음 한 번뿐이고, 그 뒤로는 즉시 감춰지고 꺼내집니다.",
+                                at: 0)
+        } else {
+            merged.notes.insert("손쉬운 사용 권한이 꺼져 있습니다. 숨기기는 되지만 "
+                                + "어느 아이콘이 어느 앱 것인지 읽을 수 없어 목록이 비어 보입니다.",
+                                at: 0)
+        }
+        return merged
     }
 
     /// One group's separator and where it sits.

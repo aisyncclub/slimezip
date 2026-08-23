@@ -2,9 +2,9 @@ import SwiftUI
 import ZipBarKit
 
 enum SettingsTab: Hashable {
+    case welcome
     case icons
     case groups
-    case onboarding
     case diagnostics
 }
 
@@ -18,30 +18,91 @@ struct SettingsView: View {
         _tab = State(initialValue: initialTab)
     }
 
+    private struct Section {
+        let tab: SettingsTab
+        let title: String
+        let symbol: String
+        let blurb: String
+    }
+
+    private let sections: [Section] = [
+        Section(tab: .welcome, title: "시작하기", symbol: "sparkles",
+                blurb: "무엇인지, 어떻게 쓰는지"),
+        Section(tab: .icons, title: "아이콘", symbol: "menubar.rectangle",
+                blurb: "넣고 빼기"),
+        Section(tab: .groups, title: "그룹", symbol: "square.stack.3d.up",
+                blurb: "묶어서 관리"),
+        Section(tab: .diagnostics, title: "진단", symbol: "stethoscope",
+                blurb: "이 맥에서 되는 것"),
+    ]
+
     var body: some View {
         VStack(spacing: 0) {
             CapabilityBanner(capabilities: engine.capabilities)
-
-            TabView(selection: $tab) {
-                IconListView(inventory: inventory, engine: engine)
-                    .tabItem { Label("아이콘", systemImage: "menubar.rectangle") }
-                    .tag(SettingsTab.icons)
-
-                GroupListView(engine: engine)
-                    .tabItem { Label("그룹", systemImage: "square.stack.3d.up") }
-                    .tag(SettingsTab.groups)
-
-                OnboardingView()
-                    .tabItem { Label("사용법", systemImage: "hand.point.up.left") }
-                    .tag(SettingsTab.onboarding)
-
-                DiagnosticsView(capabilities: engine.capabilities)
-                    .tabItem { Label("진단", systemImage: "stethoscope") }
-                    .tag(SettingsTab.diagnostics)
+            HStack(spacing: 0) {
+                sidebar
+                Divider()
+                content
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .padding(12)
         }
-        .frame(minWidth: 600, minHeight: 440)
+        .frame(minWidth: 780, minHeight: 560)
+    }
+
+    /// A sidebar rather than `TabView`.
+    ///
+    /// The TabView this replaces drew no tab bar at all — the rendered view
+    /// hierarchy went straight from the banner to the content, with no
+    /// segmented control anywhere in it. Whatever the cause, the settings
+    /// window had four pages and nothing on screen to reach three of them,
+    /// which is most of why it was hard to follow. A sidebar built out of
+    /// plain buttons cannot silently stop drawing itself.
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(sections, id: \.tab) { section in
+                Button { tab = section.tab } label: {
+                    HStack(spacing: 9) {
+                        Image(systemName: section.symbol)
+                            .frame(width: 18)
+                            .foregroundStyle(tab == section.tab ? Color.white : Color.accentColor)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(section.title)
+                                .font(.system(size: 13, weight: .semibold))
+                            Text(section.blurb)
+                                .font(.caption2)
+                                .foregroundStyle(tab == section.tab
+                                                 ? Color.white.opacity(0.8)
+                                                 : Color.secondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundStyle(tab == section.tab ? Color.white : Color.primary)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 7)
+                    .background(RoundedRectangle(cornerRadius: 7)
+                        .fill(tab == section.tab ? Color.accentColor : Color.clear))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+        }
+        .padding(10)
+        .frame(width: 184)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch tab {
+        case .welcome:
+            WelcomeView(engine: engine) { tab = .icons }
+        case .icons:
+            IconListView(inventory: inventory, engine: engine).padding(12)
+        case .groups:
+            GroupListView(engine: engine).padding(12)
+        case .diagnostics:
+            DiagnosticsView(capabilities: engine.capabilities).padding(18)
+        }
     }
 }
 

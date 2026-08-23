@@ -10,7 +10,7 @@ import ZipBarKit
 /// rewrite where macOS remembers each icon. Instructions that describe a
 /// previous version are worse than none, because the user trusts them and
 /// then cannot find what they name.
-struct OnboardingView: View {
+struct OnboardingContent: View {
     private struct Step: Identifiable {
         let id = UUID()
         /// Slime fullness to illustrate the step with, when it has one.
@@ -35,9 +35,9 @@ struct OnboardingView: View {
         ),
         Step(
             slimeStage: nil, symbol: "list.bullet.rectangle",
-            title: "'아이콘' 탭에서 넣고 뺍니다",
-            detail: "숨기고 싶은 아이콘 옆의 버튼을 누르면 됩니다. "
-                  + "직접 끌어다 옮길 필요는 없습니다."
+            title: "설정의 '아이콘'에서도 넣고 뺍니다",
+            detail: "슬라임을 눌러서 해도 되고, 한 번에 여러 개를 정리할 때는 설정 창이 "
+                  + "편합니다. 직접 끌어다 옮길 필요는 없습니다."
         ),
         Step(
             slimeStage: nil, symbol: "arrow.clockwise",
@@ -55,8 +55,7 @@ struct OnboardingView: View {
     ]
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 18) {
                 ForEach(steps) { step in
                     HStack(alignment: .top, spacing: 12) {
                         Group {
@@ -97,8 +96,6 @@ struct OnboardingView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             }
-            .padding(18)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

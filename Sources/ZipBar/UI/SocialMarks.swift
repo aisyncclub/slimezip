@@ -1,6 +1,20 @@
 import SwiftUI
 import AppKit
 
+/// Where the app points people, in one place.
+enum CreatorLinks {
+    static let home = "https://litt.ly/aisyncclub"
+    static let youTube = "https://www.youtube.com/@AISyncClub"
+    static let threads = "https://www.threads.com/@ai_sync_club"
+
+    static func open(_ string: String) {
+        // The default browser, not an in-app view: these go somewhere else,
+        // and a menu bar utility has no business hosting a web view.
+        guard let url = URL(string: string) else { return }
+        NSWorkspace.shared.open(url)
+    }
+}
+
 /// The two links in the panel footer, and the marks that stand for them.
 ///
 /// YouTube is drawn: a rounded badge with the play triangle punched out is
@@ -26,12 +40,7 @@ struct MarkButton: View {
     @State private var hovering = false
 
     var body: some View {
-        Button {
-            guard let target = URL(string: url) else { return }
-            // The default browser, not an in-app view: these go somewhere
-            // else, and a menu bar utility has no business hosting a web view.
-            NSWorkspace.shared.open(target)
-        } label: {
+        Button { CreatorLinks.open(url) } label: {
             glyph
                 .frame(width: 22, height: 18)
                 // Grey until pointed at. Two brand colours sitting in the

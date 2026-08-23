@@ -28,6 +28,9 @@ public final class SpacerStrategy: HidingStrategy {
     /// be dead: `defaults write com.zipbar.ZipBar ZipBarForceSpacerBackend -bool YES`
     nonisolated static let forceKey = "ZipBarForceSpacerBackend"
 
+    /// What the spacer mechanism itself provides. Only hiding: everything
+    /// else the app does comes from the accessibility sweep, which the engine
+    /// layers on top once it knows whether the permission is granted.
     public private(set) var capabilities = Capabilities(
         canHide: true,
         canEnumerate: false,
@@ -35,8 +38,7 @@ public final class SpacerStrategy: HidingStrategy {
         canClickRemotely: false,
         canCapture: false,
         backend: .spacer,
-        notes: ["아이콘 배치는 ⌘드래그로 직접 해야 합니다.",
-                "노치 뒤의 아이콘은 이 방식으로 꺼낼 수 없습니다."]
+        notes: ["노치 뒤의 아이콘은 이 방식으로 꺼낼 수 없습니다."]
     )
 
     public var collapseDidChange: ((MenuBarGroup.ID, Bool) -> Void)?

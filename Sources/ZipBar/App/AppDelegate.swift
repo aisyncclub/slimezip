@@ -247,6 +247,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Opens the settings window and captures it, same reasoning as the
+        // panel shot: the tabs are built on ScrollView, which ImageRenderer
+        // will not draw. ZIPBAR_SETTINGS_TAB picks the tab.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_SETTINGS_SHOT"] == "1" {
+            let out = ProcessInfo.processInfo.environment["ZIPBAR_SETTINGS_OUT"]
+                ?? "/tmp/zipbar-settings.png"
+            let which = ProcessInfo.processInfo.environment["ZIPBAR_SETTINGS_TAB"] ?? "welcome"
+            let tab: SettingsTab = {
+                switch which {
+                case "icons": return .icons
+                case "groups": return .groups
+                case "diagnostics": return .diagnostics
+                default: return .welcome
+                }
+            }()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.showSettings(selecting: tab)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                    // Long pages have content below the window, and a capture
+                    // that only ever shows the top cannot say whether the
+                    // bottom draws at all.
+                    if ProcessInfo.processInfo.environment["ZIPBAR_SETTINGS_SCROLL"] == "bottom" {
+                        self.scrollSettingsToBottom()
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.captureWindow(self.settingsWindow, to: out)
+                        NSApp.terminate(nil)
+                    }
+                }
+            }
+            return
+        }
+
         // Collapses and expands once, reporting the glyph each time — the
         // claim "the slime deflates when you let the icons out" is about the
         // drawing, so only the drawing can confirm it.
@@ -293,10 +326,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
-        // First run: explain the ⌘-drag step, because with the spacer backend
-        // nothing appears to happen until the user arranges their icons.
+        // First run opens on the welcome page. Nothing visible happens when
+        // this app is installed — one slime appears at the end of a bar that
+        // already had twenty icons — so something has to say what it is.
         if !UserDefaults.standard.bool(forKey: Self.onboardingShownKey) {
-            showSettings(selecting: .onboarding)
+            showSettings(selecting: .welcome)
             UserDefaults.standard.set(true, forKey: Self.onboardingShownKey)
         }
     }
@@ -405,6 +439,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @MainActor
+    private func scrollSettingsToBottom() {
+        func find(_ v: NSView) -> NSScrollView? {
+            if let s = v as? NSScrollView { return s }
+            for sub in v.subviews { if let s = find(sub) { return s } }
+            return nil
+        }
+        guard let root = settingsWindow?.contentView, let scroll = find(root) else { return }
+        let doc = scroll.documentView?.frame.height ?? 0
+        scroll.contentView.scroll(to: NSPoint(x: 0, y: max(0, doc - scroll.bounds.height)))
+        scroll.reflectScrolledClipView(scroll.contentView)
+    }
+
+    /// Writes any window's live contents to a PNG.
+    ///
+    /// Same technique as the panel shot and for the same reason: caching a
+    /// real view's display draws the actual hierarchy, ScrollViews included,
+    /// offscreen, with no screen recording permission and none of the user's
+    /// desktop in frame.
+    private func captureWindow(_ window: NSWindow?, to path: String) {
+        var lines: [String] = []
+        func report(_ line: String) {
+            FileHandle.standardError.write(Data((line + "\n").utf8))
+            lines.append(line)
+        }
+        defer { try? lines.joined(separator: "\n").write(
+            toFile: path + ".txt", atomically: true, encoding: .utf8) }
+
+        guard let view = window?.contentView else {
+            report("windowShot=none 창이 열리지 않았습니다")
+            return
+        }
+        let bounds = view.bounds
+        guard let rep = view.bitmapImageRepForCachingDisplay(in: bounds) else {
+            report("windowShot=none 비트맵을 만들지 못했습니다")
+            return
+        }
+        view.cacheDisplay(in: bounds, to: rep)
+        guard let data = rep.representation(using: .png, properties: [:]) else {
+            report("windowShot=none PNG 변환에 실패했습니다")
+            return
+        }
+        try? data.write(to: URL(fileURLWithPath: path))
+        report("windowShot=\(path) size=\(Int(bounds.width))x\(Int(bounds.height))")
+
+        // The class names of what is actually on screen. A capture that comes
+        // out without a tab bar has two explanations — the bar is missing, or
+        // cacheDisplay did not draw it — and only the hierarchy tells them
+        // apart.
+        func walk(_ v: NSView, _ depth: Int) {
+            let f = v.frame
+            report(String(repeating: "  ", count: depth)
+                   + "\(type(of: v)) \(Int(f.minX)),\(Int(f.minY)) "
+                   + "\(Int(f.width))x\(Int(f.height))")
+            guard depth < 4 else { return }
+            for sub in v.subviews { walk(sub, depth + 1) }
+        }
+        walk(view, 0)
+    }
+
     /// Writes the quick panel to a PNG, drawn by AppKit rather than described.
     ///
     /// `ImageRenderer` is no help here — it substitutes a "not supported"
@@ -909,7 +1002,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let root = SettingsView(engine: engine, initialTab: tab)
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 620, height: 460),
+            contentRect: NSRect(x: 0, y: 0, width: 780, height: 560),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false

@@ -17,6 +17,16 @@ cd "$ROOT"
 APP="$ROOT/dist/SlimeZIP.app"
 ZIP="$ROOT/dist/SlimeZIP-$TAG.zip"
 
+# The tag is the version. Left to a hand-edited plist it drifts — three
+# releases shipped while Info.plist still said 0.1.0, and the app's own
+# welcome page reported that stale number to the user.
+VERSION="${TAG#v}"
+PLIST="$ROOT/Resources/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$PLIST"
+BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST")
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $((BUILD + 1))" "$PLIST"
+echo "==> 버전 $VERSION (빌드 $((BUILD + 1)))"
+
 echo "==> release 빌드"
 ./scripts/build-app.sh release
 
@@ -50,3 +60,6 @@ curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/
 시스템 설정 → 개인정보 보호 및 보안 → 맨 아래 '확인 없이 열기'를 눌러 주세요."
 
 echo "완료 — https://github.com/aisyncclub/slimezip/releases/tag/$TAG"
+echo
+echo "Info.plist의 버전이 바뀌었습니다. 커밋해 두세요:"
+echo "  git add Resources/Info.plist && git commit -m \"버전 $VERSION\""
