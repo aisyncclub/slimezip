@@ -189,6 +189,26 @@ struct DiagnosticsView: View {
             }
 
             Divider()
+
+            // Said plainly and in one place. An app that quietly talks to a
+            // server is an app people are right to distrust, and the setting
+            // is worthless if nobody knows it exists.
+            VStack(alignment: .leading, spacing: 4) {
+                Label("인터넷 사용", systemImage: "network")
+                    .font(.headline)
+                Text("여섯 시간에 한 번, 패널을 열 때만 두 곳을 읽습니다 — "
+                     + "새 버전이 나왔는지(GitHub 릴리스), 그리고 아래 띠에 띄울 문구입니다. "
+                     + "보내는 것은 없고, 아이콘 목록이나 사용 기록은 어디에도 올라가지 않습니다.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("끄려면: defaults write com.zipbar.ZipBar com.zipbar.checkForUpdates -bool NO")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+                    .textSelection(.enabled)
+            }
+
+            Divider()
             Text("터미널에서 `zipbar-probe capabilities`를 실행하면 각 백엔드가 이 macOS에서 실제로 무엇을 반환하는지 확인할 수 있습니다.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)

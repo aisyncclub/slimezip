@@ -6,6 +6,9 @@ enum CreatorLinks {
     static let home = "https://litt.ly/aisyncclub"
     static let youTube = "https://www.youtube.com/@AISyncClub"
     static let threads = "https://www.threads.com/@ai_sync_club"
+    /// The marketplace. Separate from `home`: the footer link points at
+    /// the link hub, the banner points at the thing being advertised.
+    static let syncMarket = "https://aisyncclub.com/market"
 
     static func open(_ string: String) {
         // The default browser, not an in-app view: these go somewhere else,

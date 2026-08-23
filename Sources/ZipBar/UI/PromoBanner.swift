@@ -17,22 +17,21 @@ struct PromoBanner: Codable, Equatable {
     var text: String
     var url: String
     var enabled: Bool
+    /// Name of a PNG in the bundle's Brand folder, drawn in place of the
+    /// badge pill. Absent or missing on disk falls back to the pill, so a
+    /// remote config can name art this build does not ship without
+    /// leaving a hole in the strip.
+    var logo: String?
 
     static let defaultsKey = "com.zipbar.promo"
 
     static let fallback = PromoBanner(
-        badge: "Ai싱크클럽",
-        text: "싱크마켓 오픈베타 · 무료 스킬 배포 중",
-        url: CreatorLinks.home,
-        enabled: true)
+        badge: "싱크마켓",
+        text: "오픈베타 · 무료 스킬 배포 중",
+        url: CreatorLinks.syncMarket,
+        enabled: true,
+        logo: "syncmarket")
 
-    static func load(from defaults: UserDefaults = .standard) -> PromoBanner {
-        guard let raw = defaults.string(forKey: defaultsKey),
-              let data = raw.data(using: .utf8),
-              let decoded = try? JSONDecoder().decode(PromoBanner.self, from: data)
-        else { return fallback }
-        return decoded
-    }
 }
 
 /// Draws it. One target, the whole strip, same as the credit row above it.
@@ -41,15 +40,32 @@ struct PromoBannerView: View {
 
     @State private var hovering = false
 
+    private var brandImage: NSImage? {
+        guard let name = promo.logo,
+              let url = Bundle.main.url(forResource: name, withExtension: "png",
+                                        subdirectory: "Brand")
+        else { return nil }
+        return NSImage(contentsOf: url)
+    }
+
     var body: some View {
         Button { CreatorLinks.open(promo.url) } label: {
             HStack(spacing: 8) {
-                Text(promo.badge)
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Capsule().fill(Color.accentColor))
+                if let mark = brandImage {
+                    Image(nsImage: mark)
+                        .resizable()
+                        .frame(width: 18, height: 18)
+                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    Text(promo.badge)
+                        .font(.system(size: 11, weight: .bold))
+                } else {
+                    Text(promo.badge)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(Color.accentColor))
+                }
 
                 Text(promo.text)
                     .font(.system(size: 12, weight: .medium))

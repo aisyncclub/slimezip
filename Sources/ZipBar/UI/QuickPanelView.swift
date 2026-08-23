@@ -16,6 +16,7 @@ import ZipBarKit
 struct QuickPanelView: View {
     @ObservedObject var inventory: MenuBarInventory
     @ObservedObject var engine: MenuBarEngine
+    @ObservedObject var config: RemoteConfig
 
     var onOpenSettings: () -> Void
     var onToggle: () -> Void
@@ -23,6 +24,7 @@ struct QuickPanelView: View {
     var onRestart: ([MenuBarInventory.Item]) -> Void
     var onMoveSelf: (Double) -> Void
     var canMoveSelf: (Double) -> Bool
+    var onUpdate: () -> Void
 
     /// Excludes always-hidden groups, which are shut by definition — counting
     /// them pinned this to true and left the button stuck on "펼치기".
@@ -34,8 +36,7 @@ struct QuickPanelView: View {
 
     @State private var hoveringCredit = false
 
-    /// Read once per panel, not per redraw: it comes off disk.
-    private let promo = PromoBanner.load()
+    private var promo: PromoBanner { config.promo }
 
     /// How tall the list wants to be.
     ///
@@ -104,6 +105,7 @@ struct QuickPanelView: View {
             utilityRow
             Divider()
             credit
+            if config.updateAvailable { updateRow }
             if promo.enabled && !promo.text.isEmpty {
                 PromoBannerView(promo: promo)
             }
@@ -393,6 +395,33 @@ struct QuickPanelView: View {
     }
 
 
+
+    /// Shown only when a newer release actually exists.
+    ///
+    /// Not a permanent "check for updates" item: a row that is there every
+    /// day teaches people to ignore it, and by the time it means something
+    /// they no longer see it.
+    @ViewBuilder
+    private var updateRow: some View {
+        Button { onUpdate() } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .foregroundStyle(Color.accentColor)
+                Text("새 버전 \(config.latestVersion ?? "")이 있습니다")
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer(minLength: 4)
+                Text("업데이트")
+                    .font(.caption)
+                    .foregroundStyle(Color.accentColor)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("지금 버전 \(config.currentVersion) → \(config.latestVersion ?? "")")
+    }
 
     // MARK: - Actions
 

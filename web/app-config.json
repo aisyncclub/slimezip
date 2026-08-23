@@ -1,0 +1,9 @@
+{
+  "_comment": "설치된 SlimeZIP이 주기적으로 읽는 파일입니다. 여기를 고치고 push하면 GitHub Pages가 배포되고, 앱들이 다음 확인 때 새 배너를 가져갑니다. 앱을 다시 내보낼 필요가 없습니다.",
+  "promo": {
+    "badge": "싱크마켓",
+    "text": "오픈베타 · 무료 스킬 배포 중",
+    "url": "https://aisyncclub.com/market",
+    "enabled": true
+  }
+}

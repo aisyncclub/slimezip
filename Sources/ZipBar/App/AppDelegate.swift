@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var inventoryTimer: Timer?
     private let animator = SlimeAnimator()
     private var quickPanel: NSPopover?
+    private let remoteConfig = RemoteConfig()
     private var dismissMonitor: Any?
     /// Current deformation and eye state, driven by the animator.
     private var slimeSquash: CGFloat = 0
@@ -783,9 +784,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         refreshInventory()
+        // At most every six hours, and only if the check is on. Tied to the
+        // panel opening rather than a timer, so the network is touched while
+        // the user is already looking at the app.
+        remoteConfig.refresh()
+
         let content = QuickPanelView(
             inventory: inventory,
             engine: engine,
+            config: remoteConfig,
             onOpenSettings: { [weak self] in
                 self?.quickPanel?.performClose(nil)
                 self?.showSettings(selecting: .icons)
@@ -803,7 +810,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.restartSequentially(items)
             },
             onMoveSelf: { [weak self] delta in self?.moveSelf(by: delta) },
-            canMoveSelf: { [weak self] delta in self?.canMoveSelf(by: delta) ?? false })
+            canMoveSelf: { [weak self] delta in self?.canMoveSelf(by: delta) ?? false },
+            onUpdate: { [weak self] in
+                self?.quickPanel?.performClose(nil)
+                self?.runUpdate()
+            })
 
         let popover = NSPopover()
         // Not `.transient`. That behaviour closes the popover on the next
@@ -827,6 +838,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quickPanel = popover
         watchForDismissal()
 
+    }
+
+    /// Downloads the newest release and swaps this copy for it.
+    ///
+    /// Confirmed first, and the dialog says where the file comes from. An app
+    /// that can replace itself without asking is an app that can be made to
+    /// replace itself with something else.
+    private func runUpdate() {
+        let alert = NSAlert()
+        alert.messageText = "SlimeZIP \(remoteConfig.latestVersion ?? "")로 업데이트할까요?"
+        alert.informativeText =
+            "지금 \(remoteConfig.currentVersion) → \(remoteConfig.latestVersion ?? "")\n\n"
+            + "GitHub 릴리스에서 내려받아 다음 경로를 교체하고 다시 실행합니다.\n"
+            + "\(Updater.installedURL.path)\n\n"
+            + "설정과 접근성 권한은 그대로 유지됩니다."
+        alert.addButton(withTitle: "업데이트")
+        alert.addButton(withTitle: "릴리스 페이지 열기")
+        alert.addButton(withTitle: "취소")
+        NSApp.activate(ignoringOtherApps: true)
+
+        switch alert.runModal() {
+        case .alertFirstButtonReturn: performUpdate()
+        case .alertSecondButtonReturn: CreatorLinks.open(RemoteConfig.releasesPage)
+        default: break
+        }
+    }
+
+    private func performUpdate() {
+        Updater.downloadAndInstall(progress: { _ in
+            // Steps are reported for a future progress sheet. The whole run
+            // is a few seconds on any normal connection, and a modal that
+            // flashes three labels and vanishes is worse than none.
+        }, completion: { result in
+            // Success never gets here — the handoff quits this process.
+            guard case .failure(let error) = result else { return }
+            let failed = NSAlert()
+            failed.messageText = "업데이트하지 못했습니다"
+            failed.informativeText = (error as? Updater.Failure)?.errorDescription
+                ?? error.localizedDescription
+            failed.addButton(withTitle: "확인")
+            failed.addButton(withTitle: "릴리스 페이지 열기")
+            NSApp.activate(ignoringOtherApps: true)
+            if failed.runModal() == .alertSecondButtonReturn {
+                CreatorLinks.open(RemoteConfig.releasesPage)
+            }
+        })
     }
 
     /// Keeps the panel inside the display it opened on.

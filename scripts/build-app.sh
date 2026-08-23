@@ -32,6 +32,7 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 cp -R "$ROOT/Resources/Slime" "$APP/Contents/Resources/Slime"
+cp -R "$ROOT/Resources/Brand" "$APP/Contents/Resources/Brand"
 
 # Sign with the stable "ZipBar Dev" identity when the keychain has it.
 #
