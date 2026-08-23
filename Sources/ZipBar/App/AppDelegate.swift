@@ -281,6 +281,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Exercises the whole update path against this copy of the app: the
+        // handoff targets Bundle.main, so pointing a throwaway build at it
+        // replaces the throwaway and leaves the installed one alone.
+        if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_UPDATE"] == "1" {
+            let out = ProcessInfo.processInfo.environment["ZIPBAR_UPDATE_OUT"]
+                ?? "/tmp/zipbar-update.txt"
+            func note(_ line: String) {
+                let existing = (try? String(contentsOfFile: out, encoding: .utf8)) ?? ""
+                try? (existing + line + "\n").write(toFile: out, atomically: true, encoding: .utf8)
+            }
+            try? FileManager.default.removeItem(atPath: out)
+            note("current=\(self.remoteConfig.currentVersion)")
+            self.remoteConfig.refresh(force: true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                note("latest=\(self.remoteConfig.latestVersion ?? "nil")")
+                note("updateAvailable=\(self.remoteConfig.updateAvailable)")
+                note("target=\(Updater.installedURL.path)")
+                guard self.remoteConfig.updateAvailable else {
+                    note("result=skipped"); NSApp.terminate(nil); return
+                }
+                Updater.downloadAndInstall(progress: { note("step=\($0)") }) { result in
+                    switch result {
+                    case .success: note("result=handed-off")
+                    case .failure(let error):
+                        note("result=failed \((error as? Updater.Failure)?.errorDescription ?? "\(error)")")
+                        NSApp.terminate(nil)
+                    }
+                }
+            }
+            return
+        }
+
         // Collapses and expands once, reporting the glyph each time — the
         // claim "the slime deflates when you let the icons out" is about the
         // drawing, so only the drawing can confirm it.
