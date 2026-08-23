@@ -33,7 +33,7 @@
 
 ### 1단계 — 파일 받기
 
-[**릴리스 페이지**](https://github.com/aisyncclub/zipbar/releases/latest)로 가서 `SlimeZIP-*.zip`을 내려받습니다.
+[**릴리스 페이지**](https://github.com/aisyncclub/slimezip/releases/latest)로 가서 `SlimeZIP-*.zip`을 내려받습니다.
 
 ### 2단계 — 압축 풀기
 
@@ -98,7 +98,7 @@ macOS 26부터 메뉴바 아이콘을 **제어 센터가 대신 그립니다.** 
 | 목록 — **비어 있음** | 목록 — **앱 이름까지 표시** |
 
 SlimeZIP은 이 권한으로 **읽기만** 합니다. 키 입력을 가로채거나 기록하지 않습니다.
-[소스](https://github.com/aisyncclub/zipbar/tree/master/Sources/ZipBarKit/Services)에서 확인하실 수 있습니다.
+[소스](https://github.com/aisyncclub/slimezip/tree/master/Sources/ZipBarKit/Services)에서 확인하실 수 있습니다.
 
 ---
 
@@ -193,7 +193,7 @@ SlimeZIP을 재시작해 보세요. 앱을 새 버전으로 덮어썼을 때 가
 
 일부 앱은 종료할 때 자기 위치를 다시 저장해서 우리가 쓴 값을 덮어씁니다.
 SlimeZIP은 종료가 끝난 뒤 다시 쓰는 방식으로 이걸 피합니다. 그래도 안 되는
-앱이 있으면 [이슈로 알려 주세요](https://github.com/aisyncclub/zipbar/issues).
+앱이 있으면 [이슈로 알려 주세요](https://github.com/aisyncclub/slimezip/issues).
 
 </details>
 
@@ -229,13 +229,13 @@ defaults delete com.zipbar.ZipBar
 터미널이 익숙하시면 이 한 줄이면 끝납니다.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aisyncclub/zipbar/master/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash
 ```
 
 최신 릴리스를 받아 `/Applications`에 넣고, 다운로드 표시를 지운 뒤 실행합니다.
 [1번](#1-내려받아-설치하기)의 5단계를 건너뛰게 해 주는 것뿐, 하는 일은 같습니다.
 
-스크립트가 무엇을 하는지 [직접 읽어 보실 수 있습니다](https://github.com/aisyncclub/zipbar/blob/master/scripts/install.sh).
+스크립트가 무엇을 하는지 [직접 읽어 보실 수 있습니다](https://github.com/aisyncclub/slimezip/blob/master/scripts/install.sh).
 모르는 스크립트를 `| bash`로 넘기는 건 좋은 습관이 아니니, 읽어 보고 판단하세요.
 
 ---
@@ -258,7 +258,7 @@ xcode-select --install
 ### 빌드
 
 ```bash
-git clone https://github.com/aisyncclub/zipbar.git
+git clone https://github.com/aisyncclub/slimezip.git
 cd zipbar
 ./scripts/build-app.sh
 open dist/SlimeZIP.app
@@ -306,7 +306,7 @@ OS 업데이트 후 무엇이 깨졌는지 확인합니다. **베타가 나오�
 
 <div align="center">
 
-**막히는 데가 있으면 [이슈로 알려 주세요](https://github.com/aisyncclub/zipbar/issues).**
+**막히는 데가 있으면 [이슈로 알려 주세요](https://github.com/aisyncclub/slimezip/issues).**
 
 무엇을 하려다 어디서 멈췄는지, macOS 버전과 함께 적어 주시면 빠릅니다.
 

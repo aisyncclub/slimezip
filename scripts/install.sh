@@ -1,7 +1,7 @@
 #!/bin/bash
 # One-line installer for SlimeZIP.
 #
-#   curl -fsSL https://raw.githubusercontent.com/aisyncclub/zipbar/master/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash
 #
 # Downloads the latest released build, puts it in /Applications, and clears
 # the download quarantine so the app opens on the first double-click.
@@ -22,7 +22,7 @@
 # would rather not can use the manual route in docs/INSTALL.md instead.
 set -euo pipefail
 
-REPO="aisyncclub/zipbar"
+REPO="aisyncclub/slimezip"
 APP="/Applications/SlimeZIP.app"
 LEGACY="/Applications/ZipBar.app"
 TMP="$(mktemp -d)"

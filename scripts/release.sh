@@ -43,10 +43,10 @@ gh release create "$TAG" "$ZIP" \
   --notes "설치:
 
 \`\`\`bash
-curl -fsSL https://raw.githubusercontent.com/aisyncclub/zipbar/master/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash
 \`\`\`
 
 또는 아래 zip을 내려받아 응용 프로그램으로 옮긴 뒤,
 시스템 설정 → 개인정보 보호 및 보안 → 맨 아래 '확인 없이 열기'를 눌러 주세요."
 
-echo "완료 — https://github.com/aisyncclub/zipbar/releases/tag/$TAG"
+echo "완료 — https://github.com/aisyncclub/slimezip/releases/tag/$TAG"

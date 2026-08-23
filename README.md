@@ -11,7 +11,7 @@
 
 <br>
 
-[**설치하기**](docs/INSTALL.md) · [최신 릴리스](https://github.com/aisyncclub/zipbar/releases/latest) · [문제 해결](docs/INSTALL.md#4-문제가-생기면)
+[**설치하기**](docs/INSTALL.md) · [최신 릴리스](https://github.com/aisyncclub/slimezip/releases/latest) · [문제 해결](docs/INSTALL.md#4-문제가-생기면)
 
 <sub>macOS 14 이상 · 무료 · 오픈소스 · 설치 1분</sub>
 
@@ -80,7 +80,7 @@ Tailscale인지 카카오톡인지 이름으로 보여 줍니다.
 
 ### 내려받아서
 
-1. [릴리스](https://github.com/aisyncclub/zipbar/releases/latest)에서 `SlimeZIP-*.zip`을 받습니다
+1. [릴리스](https://github.com/aisyncclub/slimezip/releases/latest)에서 `SlimeZIP-*.zip`을 받습니다
 2. 압축을 풀고 `SlimeZIP.app`을 **응용 프로그램**으로 옮깁니다
 3. 처음 열면 macOS가 막습니다 → **시스템 설정 → 개인정보 보호 및 보안** 맨 아래 **확인 없이 열기**
 4. **시스템 설정 → 손쉬운 사용**에서 SlimeZIP을 켭니다
@@ -90,7 +90,7 @@ Tailscale인지 카카오톡인지 이름으로 보여 줍니다.
 ### 터미널이 익숙하면
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aisyncclub/zipbar/master/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash
 ```
 
 **화면 그림까지 있는 단계별 안내와 문제 해결은 [설치 가이드](docs/INSTALL.md)에 있습니다.**
@@ -179,7 +179,7 @@ Homebrew cask 등록도 열립니다.
 
 <div align="center">
 
-**문제가 생기면 [이슈로 알려 주세요](https://github.com/aisyncclub/zipbar/issues).**
+**문제가 생기면 [이슈로 알려 주세요](https://github.com/aisyncclub/slimezip/issues).**
 
 <sub>SlimeZIP · macOS 14+ · 무료 · 오픈소스</sub>
 
