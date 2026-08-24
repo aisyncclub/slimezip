@@ -5,16 +5,25 @@ enum SettingsTab: Hashable {
     case welcome
     case icons
     case groups
+    case creator
     case diagnostics
 }
 
 struct SettingsView: View {
     @ObservedObject var engine: MenuBarEngine
+    @ObservedObject var config: RemoteConfig
     @StateObject private var inventory = MenuBarInventory()
     @State private var tab: SettingsTab
 
-    init(engine: MenuBarEngine, initialTab: SettingsTab = .icons) {
+    var onUpdate: () -> Void
+
+    init(engine: MenuBarEngine,
+         config: RemoteConfig,
+         initialTab: SettingsTab = .icons,
+         onUpdate: @escaping () -> Void = {}) {
         self.engine = engine
+        self.config = config
+        self.onUpdate = onUpdate
         _tab = State(initialValue: initialTab)
     }
 
@@ -32,6 +41,8 @@ struct SettingsView: View {
                 blurb: "넣고 빼기"),
         Section(tab: .groups, title: "그룹", symbol: "square.stack.3d.up",
                 blurb: "묶어서 관리"),
+        Section(tab: .creator, title: "제작자", symbol: "person.2",
+                blurb: "Ai싱크클럽 · 싱크 제작"),
         Section(tab: .diagnostics, title: "진단", symbol: "stethoscope",
                 blurb: "이 맥에서 되는 것"),
     ]
@@ -100,6 +111,8 @@ struct SettingsView: View {
             IconListView(inventory: inventory, engine: engine).padding(12)
         case .groups:
             GroupListView(engine: engine).padding(12)
+        case .creator:
+            CreatorView(config: config, onUpdate: onUpdate)
         case .diagnostics:
             DiagnosticsView(capabilities: engine.capabilities).padding(18)
         }

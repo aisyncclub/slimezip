@@ -105,7 +105,7 @@ struct QuickPanelView: View {
             utilityRow
             Divider()
             credit
-            if config.updateAvailable { updateRow }
+            updateRow
             if promo.enabled && !promo.text.isEmpty {
                 PromoBannerView(promo: promo)
             }
@@ -396,31 +396,60 @@ struct QuickPanelView: View {
 
 
 
-    /// Shown only when a newer release actually exists.
+    /// The update line, in whichever of its three states applies.
     ///
-    /// Not a permanent "check for updates" item: a row that is there every
-    /// day teaches people to ignore it, and by the time it means something
-    /// they no longer see it.
+    /// A newer version outranks everything: once there is something to
+    /// install, the button to look again is beside the point. Otherwise the
+    /// row is the button, and it answers in place rather than in a dialog —
+    /// a modal that says "최신입니다" and needs dismissing is a punishment for
+    /// pressing it.
     @ViewBuilder
     private var updateRow: some View {
-        Button { onUpdate() } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "arrow.down.circle.fill")
-                    .foregroundStyle(Color.accentColor)
-                Text("새 버전 \(config.latestVersion ?? "")이 있습니다")
-                    .font(.system(size: 12, weight: .semibold))
-                Spacer(minLength: 4)
-                Text("업데이트")
-                    .font(.caption)
-                    .foregroundStyle(Color.accentColor)
+        if config.updateAvailable {
+            Button { onUpdate() } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                    Text("새 버전 \(config.latestVersion ?? "")이 있습니다")
+                        .font(.system(size: 12, weight: .semibold))
+                    Spacer(minLength: 4)
+                    Text("업데이트")
+                        .font(.caption)
+                        .foregroundStyle(Color.accentColor)
+                }
+                .modifier(UpdateRowChrome())
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .help("지금 \(config.currentVersion) → \(config.latestVersion ?? "")")
+        } else {
+            Button { config.checkNow() } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: config.isChecking
+                          ? "arrow.triangle.2.circlepath"
+                          : "checkmark.circle")
+                        .foregroundStyle(.secondary)
+                    Text(checkLabel)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 4)
+                    if !config.isChecking {
+                        Text("업데이트 확인")
+                            .font(.caption)
+                            .foregroundStyle(Color.accentColor)
+                    }
+                }
+                .modifier(UpdateRowChrome())
+            }
+            .buttonStyle(.plain)
+            .disabled(config.isChecking)
+            .help(RemoteConfig.releasesPage)
         }
-        .buttonStyle(.plain)
-        .help("지금 버전 \(config.currentVersion) → \(config.latestVersion ?? "")")
+    }
+
+    private var checkLabel: String {
+        if config.isChecking { return "확인 중…" }
+        if config.lastCheckedAt != nil { return "최신입니다 · 버전 \(config.currentVersion)" }
+        return "버전 \(config.currentVersion)"
     }
 
     // MARK: - Actions
@@ -430,5 +459,17 @@ struct QuickPanelView: View {
         // coming from any group — the simple reading of one button.
         let destination: MenuBarZone = zone == .visible ? .group(0) : .visible
         inventory.move(item, toZone: destination)
+    }
+}
+
+/// Shared padding for the update row's two faces, so switching between them
+/// does not change the panel's height by a pixel.
+private struct UpdateRowChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
     }
 }

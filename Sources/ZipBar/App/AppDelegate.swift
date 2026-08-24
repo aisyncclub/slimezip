@@ -238,7 +238,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ProcessInfo.processInfo.environment["ZIPBAR_PROBE_PANEL_SHOT"] == "1" {
             let out = ProcessInfo.processInfo.environment["ZIPBAR_PANEL_OUT"]
                 ?? "/tmp/zipbar-panel.png"
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            // ZIPBAR_PANEL_CHECK=1 runs the check the button runs, so the
+            // row's after-state can be looked at rather than assumed.
+            let preCheck = ProcessInfo.processInfo.environment["ZIPBAR_PANEL_CHECK"] == "1"
+            if preCheck { self.remoteConfig.checkNow() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + (preCheck ? 5 : 1.5)) {
                 self.toggleQuickPanel()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     self.capturePanel(to: out)
@@ -260,6 +264,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case "icons": return .icons
                 case "groups": return .groups
                 case "diagnostics": return .diagnostics
+                case "creator": return .creator
                 default: return .welcome
                 }
             }()
@@ -1099,7 +1104,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let root = SettingsView(engine: engine, initialTab: tab)
+        remoteConfig.refresh()
+        let root = SettingsView(
+            engine: engine, config: remoteConfig, initialTab: tab,
+            onUpdate: { [weak self] in self?.runUpdate() })
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 780, height: 560),
             styleMask: [.titled, .closable, .miniaturizable],

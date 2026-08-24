@@ -36,6 +36,14 @@ final class RemoteConfig: ObservableObject {
 
     @Published private(set) var promo: PromoBanner
     @Published private(set) var latestVersion: String?
+    /// True while a check the user asked for is in flight, so the button can
+    /// say so. Background checks do not set it — a spinner appearing on its
+    /// own, for something nobody asked about, is just noise.
+    @Published private(set) var isChecking = false
+    /// When the last check finished, whatever it found. Without this the
+    /// panel cannot tell "no newer version" from "never looked", and those
+    /// need different words.
+    @Published private(set) var lastCheckedAt: Date?
 
     private let defaults: UserDefaults
 
@@ -82,10 +90,31 @@ final class RemoteConfig: ObservableObject {
         if !force {
             let last = defaults.double(forKey: Self.lastCheckKey)
             guard Date().timeIntervalSince1970 - last > Self.interval else { return }
+        } else {
+            isChecking = true
         }
         defaults.set(Date().timeIntervalSince1970, forKey: Self.lastCheckKey)
         fetchPromo()
         fetchLatestVersion()
+    }
+
+    /// What the user pressed a button to do.
+    ///
+    /// Ignores the six-hour throttle and ignores the opt-out too: switching
+    /// off background checks is about not being contacted unasked, not about
+    /// being refused when you ask.
+    func checkNow() {
+        isChecking = true
+        defaults.set(Date().timeIntervalSince1970, forKey: Self.lastCheckKey)
+        fetchPromo()
+        fetchLatestVersion()
+        // The fetch is silent on failure, so nothing else would ever clear
+        // the flag on a machine with no network.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 9) { [weak self] in
+            guard let self, self.isChecking else { return }
+            self.isChecking = false
+            self.lastCheckedAt = Date()
+        }
     }
 
     private func fetchPromo() {
@@ -106,8 +135,12 @@ final class RemoteConfig: ObservableObject {
 
     private func fetchLatestVersion() {
         get(Self.releasesAPI) { [weak self] data in
-            guard let self,
-                  let release = try? JSONDecoder().decode(ReleasePayload.self, from: data)
+            guard let self else { return }
+            defer {
+                self.isChecking = false
+                self.lastCheckedAt = Date()
+            }
+            guard let release = try? JSONDecoder().decode(ReleasePayload.self, from: data)
             else { return }
             let version = release.tag_name.hasPrefix("v")
                 ? String(release.tag_name.dropFirst())
