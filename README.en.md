@@ -23,11 +23,14 @@ Keep the few you use; the rest go in and out with one click.
 
 </div>
 
-> [!IMPORTANT]
-> **The app's interface is Korean only.** This README is translated; the app is not,
-> at least not yet. If that is a problem for you, it is a problem — please say so in an
-> [issue](https://github.com/aisyncclub/slimezip/issues) and it moves up the list.
-> Everything else below applies regardless of language.
+> [!TIP]
+> **The app speaks English.** It follows your system language on first launch, so an
+> English Mac gets English with nothing to configure. To set it by hand:
+> **right-click the slime → Settings → Creator → This app → Language**, and pick
+> `English`, `한국어`, or `Follow system`. The change applies immediately — no restart.
+>
+> Group names you have already created stay as you typed them. Renaming your own data
+> to match a language setting would be damage, not translation.
 
 <br>
 
@@ -129,6 +132,7 @@ each other flat in the same slot instead. They blink, and they breathe.
 | **Notices changes while hidden** | If a hidden icon's artwork changes, the slime twitches and an orange dot appears. |
 | **Groups** | Several groups, collapsed and expanded independently. An "always hidden" group does not open on a normal click. |
 | **Update check** | New releases show up in the panel; one button downloads and replaces this copy. |
+| **English · 한국어** | Follows your system language, or set it yourself in Settings → Creator → This app → Language. Applies immediately. |
 | **0.0% CPU at rest** | Nothing is polled. |
 
 ---
