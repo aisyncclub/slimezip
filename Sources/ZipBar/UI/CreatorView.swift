@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import ZipBarKit
 
 /// Who made this, where to find them, and what this copy is.
 ///
@@ -11,6 +12,10 @@ struct CreatorView: View {
     @ObservedObject var config: RemoteConfig
     var onUpdate: () -> Void
 
+    /// Only here to force a redraw when the picker changes; the value that
+    /// matters lives in `L10n.preference`.
+    @State private var language = L10n.preference
+
     private struct Destination {
         let title: String
         let detail: String
@@ -20,17 +25,17 @@ struct CreatorView: View {
     }
 
     private var destinations: [Destination] {[
-        Destination(title: "GitHub — 별 눌러 주기",
-                    detail: config.stars.map { "소스 공개 · 지금 별 \($0)개" }
-                        ?? "소스 공개 · 별 하나가 큰 힘이 됩니다",
+        Destination(title: L("GitHub — 별 눌러 주기"),
+                    detail: config.stars.map { L("소스 공개 · 지금 별 %@개", "\($0)") }
+                        ?? L("소스 공개 · 별 하나가 큰 힘이 됩니다"),
                     url: CreatorLinks.repo, symbol: "star", logo: nil),
-        Destination(title: "싱크마켓", detail: "AI 스킬·템플릿·자료 — 오픈베타 무료 배포 중",
+        Destination(title: L("싱크마켓"), detail: L("AI 스킬·템플릿·자료 — 오픈베타 무료 배포 중"),
                     url: CreatorLinks.syncMarket, symbol: "bag", logo: "syncmarket"),
-        Destination(title: "링크 모음", detail: "커뮤니티, 강의, 자료실까지 한 곳에",
+        Destination(title: L("링크 모음"), detail: L("커뮤니티, 강의, 자료실까지 한 곳에"),
                     url: CreatorLinks.home, symbol: "link", logo: nil),
-        Destination(title: "유튜브", detail: "@AISyncClub",
+        Destination(title: L("유튜브"), detail: "@AISyncClub",
                     url: CreatorLinks.youTube, symbol: "play.rectangle", logo: nil),
-        Destination(title: "쓰레드", detail: "@ai_sync_club",
+        Destination(title: L("쓰레드"), detail: "@ai_sync_club",
                     url: CreatorLinks.threads, symbol: "at", logo: nil),
     ]}
 
@@ -51,13 +56,12 @@ struct CreatorView: View {
         HStack(alignment: .top, spacing: 16) {
             SlimeDecor.Portrait(stage: 3, height: 52)
             VStack(alignment: .leading, spacing: 5) {
-                Text("Ai싱크클럽")
+                Text(L("Ai싱크클럽"))
                     .font(.system(size: 24, weight: .bold))
-                Text("싱크 제작")
+                Text(L("싱크 제작"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Text("AI를 실제 업무에 붙이는 사람들의 커뮤니티입니다. "
-                     + "SlimeZIP은 거기서 나온 도구 중 하나고, 무료이며 소스가 공개돼 있습니다.")
+                Text(L("AI를 실제 업무에 붙이는 사람들의 커뮤니티입니다. SlimeZIP은 거기서 나온 도구 중 하나고, 무료이며 소스가 공개돼 있습니다."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -79,7 +83,7 @@ struct CreatorView: View {
 
     private var appInfo: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("이 앱")
+            Text(L("이 앱"))
                 .font(.title3.weight(.semibold))
 
             HStack(spacing: 12) {
@@ -92,10 +96,10 @@ struct CreatorView: View {
                 }
                 Spacer(minLength: 8)
                 if config.updateAvailable {
-                    Button("업데이트", action: onUpdate)
+                    Button(L("업데이트"), action: onUpdate)
                         .buttonStyle(.borderedProminent)
                 } else {
-                    Button(config.isChecking ? "확인 중…" : "업데이트 확인") {
+                    Button(config.isChecking ? L("확인 중…") : L("업데이트 확인")) {
                         config.checkNow()
                     }
                     .disabled(config.isChecking)
@@ -105,20 +109,40 @@ struct CreatorView: View {
             .background(RoundedRectangle(cornerRadius: 10)
                 .fill(Color.primary.opacity(0.045)))
 
-            Button("릴리스 기록 보기") { CreatorLinks.open(RemoteConfig.releasesPage) }
+            Button(L("릴리스 기록 보기")) { CreatorLinks.open(RemoteConfig.releasesPage) }
                 .buttonStyle(.link)
                 .font(.callout)
+
+            // Sits with the app's own facts rather than in a preferences pane
+            // of its own: it is a property of this copy, like its version.
+            // Changing it redraws immediately — the whole UI reads the table
+            // on every draw, so there is nothing to reload and nothing to
+            // restart.
+            HStack(spacing: 10) {
+                Text(L("언어")).font(.headline)
+                Picker("", selection: Binding(
+                    get: { L10n.preference },
+                    set: { L10n.preference = $0; language = $0 })) {
+                    ForEach(L10n.Language.allCases, id: \.self) { lang in
+                        Text(lang.label).tag(lang)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 190)
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 4)
         }
     }
 
     private var statusLine: String {
-        if config.isChecking { return "확인 중…" }
+        if config.isChecking { return L("확인 중…") }
         if let latest = config.latestVersion, config.updateAvailable {
-            return "새 버전 \(latest)이 나와 있습니다"
+            return L("새 버전 %@이 나와 있습니다", latest)
         }
         return config.lastCheckedAt == nil
-            ? "무료 · 오픈소스 · macOS 14 이상"
-            : "최신 버전입니다"
+            ? L("무료 · 오픈소스 · macOS 14 이상")
+            : L("최신 버전입니다")
     }
 }
 

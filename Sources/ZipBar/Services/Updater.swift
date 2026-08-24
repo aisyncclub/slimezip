@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import ZipBarKit
 
 /// Replaces the running app with the newest release.
 ///
@@ -27,11 +28,11 @@ struct Updater {
 
         var errorDescription: String? {
             switch self {
-            case .noRelease: return "받을 수 있는 릴리스를 찾지 못했습니다."
-            case .download: return "내려받는 중 문제가 생겼습니다. 잠시 뒤 다시 시도해 주세요."
-            case .badArchive: return "받은 파일을 열지 못했습니다."
-            case .notOurApp: return "받은 파일이 SlimeZIP이 아닙니다. 설치를 중단했습니다."
-            case .install(let why): return "설치하지 못했습니다 — \(why)"
+            case .noRelease: return L("받을 수 있는 릴리스를 찾지 못했습니다.")
+            case .download: return L("내려받는 중 문제가 생겼습니다. 잠시 뒤 다시 시도해 주세요.")
+            case .badArchive: return L("받은 파일을 열지 못했습니다.")
+            case .notOurApp: return L("받은 파일이 SlimeZIP이 아닙니다. 설치를 중단했습니다.")
+            case .install(let why): return L("설치하지 못했습니다 — %@", why)
             }
         }
     }
@@ -45,17 +46,17 @@ struct Updater {
         progress: @escaping (String) -> Void,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
-        progress("최신 릴리스 확인 중…")
+        progress(L("최신 릴리스 확인 중…"))
         fetchAssetURL { result in
             switch result {
             case .failure(let error): completion(.failure(error))
             case .success(let asset):
-                progress("내려받는 중…")
+                progress(L("내려받는 중…"))
                 download(asset) { downloaded in
                     switch downloaded {
                     case .failure(let error): completion(.failure(error))
                     case .success(let zip):
-                        progress("설치 중…")
+                        progress(L("설치 중…"))
                         do {
                             let app = try unpack(zip)
                             try handOff(newBundle: app)
@@ -150,7 +151,8 @@ struct Updater {
     private static func handOff(newBundle: URL) throws {
         let target = installedURL
         guard FileManager.default.isWritableFile(atPath: target.deletingLastPathComponent().path)
-        else { throw Failure.install("\(target.deletingLastPathComponent().path)에 쓸 권한이 없습니다") }
+        else { throw Failure.install(L("%@에 쓸 권한이 없습니다",
+                                      target.deletingLastPathComponent().path)) }
 
         let pid = ProcessInfo.processInfo.processIdentifier
         // Waits for this exact process rather than sleeping a fixed time: a

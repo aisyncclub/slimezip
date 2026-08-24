@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import ZipBarKit
 
 /// The strip along the bottom of the panel.
 ///
@@ -22,15 +23,26 @@ struct PromoBanner: Codable, Equatable {
     /// remote config can name art this build does not ship without
     /// leaving a hole in the strip.
     var logo: String?
+    /// English copy, when the config carries it. Optional so an older config
+    /// file — or one written by somebody who only cares about Korean — still
+    /// decodes, and simply shows the Korean to everyone.
+    var badge_en: String?
+    var text_en: String?
+
+    /// What to actually draw, for the language in use.
+    var resolvedBadge: String { L10n.current == .en ? (badge_en ?? badge) : badge }
+    var resolvedText: String { L10n.current == .en ? (text_en ?? text) : text }
 
     static let defaultsKey = "com.zipbar.promo"
 
     static let fallback = PromoBanner(
-        badge: "싱크마켓",
-        text: "오픈베타 · 무료 스킬 배포 중",
+        badge: L("싱크마켓"),
+        text: L("오픈베타 · 무료 스킬 배포 중"),
         url: CreatorLinks.syncMarket,
         enabled: true,
-        logo: "syncmarket")
+        logo: "syncmarket",
+        badge_en: "SyncMarket",
+        text_en: "Open beta · free skills")
 
 }
 
@@ -56,10 +68,10 @@ struct PromoBannerView: View {
                         .resizable()
                         .frame(width: 18, height: 18)
                         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                    Text(promo.badge)
+                    Text(promo.resolvedBadge)
                         .font(.system(size: 11, weight: .bold))
                 } else {
-                    Text(promo.badge)
+                    Text(promo.resolvedBadge)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 6)
@@ -67,7 +79,7 @@ struct PromoBannerView: View {
                         .background(Capsule().fill(Color.accentColor))
                 }
 
-                Text(promo.text)
+                Text(promo.resolvedText)
                     .font(.system(size: 12, weight: .medium))
                     .lineLimit(1)
                     // Shrinks rather than truncates: the whole point of the

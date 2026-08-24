@@ -23,34 +23,28 @@ struct OnboardingContent: View {
     private let steps: [Step] = [
         Step(
             slimeStage: 1, symbol: nil,
-            title: "메뉴바의 슬라임이 SlimeZIP입니다",
-            detail: "숨긴 아이콘이 없으면 한 마리가 둥글게 쉬고 있습니다. "
-                  + "가끔 숨을 쉬고 눈을 깜빡입니다."
+            title: L("메뉴바의 슬라임이 SlimeZIP입니다"),
+            detail: L("숨긴 아이콘이 없으면 한 마리가 둥글게 쉬고 있습니다. 가끔 숨을 쉬고 눈을 깜빡입니다.")
         ),
         Step(
             slimeStage: nil, symbol: "cursorarrow.click",
-            title: "슬라임을 클릭하면 접히고 펴집니다",
-            detail: "왼쪽 클릭으로 숨긴 아이콘을 잠깐 꺼내 보고 다시 넣습니다. "
-                  + "오른쪽 클릭하면 메뉴가 열립니다."
+            title: L("슬라임을 클릭하면 접히고 펴집니다"),
+            detail: L("왼쪽 클릭으로 숨긴 아이콘을 잠깐 꺼내 보고 다시 넣습니다. 오른쪽 클릭하면 메뉴가 열립니다.")
         ),
         Step(
             slimeStage: nil, symbol: "list.bullet.rectangle",
-            title: "설정의 '아이콘'에서도 넣고 뺍니다",
-            detail: "슬라임을 눌러서 해도 되고, 한 번에 여러 개를 정리할 때는 설정 창이 "
-                  + "편합니다. 직접 끌어다 옮길 필요는 없습니다."
+            title: L("설정의 '아이콘'에서도 넣고 뺍니다"),
+            detail: L("슬라임을 눌러서 해도 되고, 한 번에 여러 개를 정리할 때는 설정 창이 편합니다. 직접 끌어다 옮길 필요는 없습니다.")
         ),
         Step(
             slimeStage: nil, symbol: "arrow.clockwise",
-            title: "재시작은 한 번뿐입니다",
-            detail: "아이콘의 자리는 그 앱이 시작할 때 읽히므로, 처음 넣거나 뺄 때만 "
-                  + "그 앱을 한 번 재시작합니다. 자리가 정해진 뒤로는 감추고 꺼내는 "
-                  + "것이 슬라임 클릭만으로 즉시 됩니다."
+            title: L("재시작은 한 번뿐입니다"),
+            detail: L("아이콘의 자리는 그 앱이 시작할 때 읽히므로, 처음 넣거나 뺄 때만 그 앱을 한 번 재시작합니다. 자리가 정해진 뒤로는 감추고 꺼내는 것이 슬라임 클릭만으로 즉시 됩니다.")
         ),
         Step(
             slimeStage: 5, symbol: nil,
-            title: "많이 물수록 납작해집니다",
-            detail: "숨긴 아이콘이 늘어나면 슬라임들이 같은 자리에서 서로를 눌러 "
-                  + "찌부됩니다. 아이콘이 넓어지지는 않습니다."
+            title: L("많이 물수록 납작해집니다"),
+            detail: L("숨긴 아이콘이 늘어나면 슬라임들이 같은 자리에서 서로를 눌러 찌부됩니다. 아이콘이 넓어지지는 않습니다.")
         ),
     ]
 
@@ -83,15 +77,12 @@ struct OnboardingContent: View {
                 Divider()
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Label("아직 안 되는 것", systemImage: "exclamationmark.triangle")
+                    Label(L("아직 안 되는 것"), systemImage: "exclamationmark.triangle")
                         .font(.headline)
-                    Text("• 노치 뒤에 가려진 아이콘은 이 방식으로 꺼낼 수 없습니다.")
-                    Text("• 화면 기록 아이콘처럼 시스템이 우선하는 항목은 숨길 수 없습니다.")
-                    Text("• 숨겨진 앱의 알림은 감지할 수 없습니다. macOS가 다른 앱의 "
-                         + "미읽음 상태를 공개하지 않기 때문에, 대신 아이콘이 바뀌면 "
-                         + "슬라임에 주황 점이 찍힙니다.")
-                    Text("• 그룹은 왼쪽으로 갈수록 안쪽입니다. 바깥 그룹을 접으면 그 "
-                         + "왼쪽 그룹도 함께 가려집니다.")
+                    Text(L("• 노치 뒤에 가려진 아이콘은 이 방식으로 꺼낼 수 없습니다."))
+                    Text(L("• 화면 기록 아이콘처럼 시스템이 우선하는 항목은 숨길 수 없습니다."))
+                    Text(L("• 숨겨진 앱의 알림은 감지할 수 없습니다. macOS가 다른 앱의 미읽음 상태를 공개하지 않기 때문에, 대신 아이콘이 바뀌면 슬라임에 주황 점이 찍힙니다."))
+                    Text(L("• 그룹은 왼쪽으로 갈수록 안쪽입니다. 바깥 그룹을 접으면 그 왼쪽 그룹도 함께 가려집니다."))
                 }
                 .font(.callout)
                 .foregroundStyle(.secondary)

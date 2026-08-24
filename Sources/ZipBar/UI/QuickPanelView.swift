@@ -85,7 +85,7 @@ struct QuickPanelView: View {
                     ForEach(Array(inventory.boundaries.enumerated()), id: \.offset) { index, boundary in
                         group(title: boundary.name, zone: .group(index))
                     }
-                    group(title: "밖에 나와 있는 것", zone: .visible)
+                    group(title: L("밖에 나와 있는 것"), zone: .visible)
                 }
                 .padding(.vertical, 4)
             }
@@ -112,7 +112,7 @@ struct QuickPanelView: View {
             if starPrompt.shouldAsk {
                 StarPromptView(prompt: starPrompt, stars: config.stars)
             }
-            if promo.enabled && !promo.text.isEmpty {
+            if promo.enabled && !promo.resolvedText.isEmpty {
                 PromoBannerView(promo: promo)
             }
         }
@@ -137,10 +137,10 @@ struct QuickPanelView: View {
                 // Follows the same reading as the slime beside it: an open
                 // group is holding nothing, however many icons it owns.
                 Text(inventory.held.isEmpty
-                     ? "숨긴 아이콘 없음"
+                     ? L("숨긴 아이콘 없음")
                      : inventory.concealed.isEmpty
-                       ? "\(inventory.held.count)개 꺼내 둠"
-                       : "\(inventory.concealed.count)개 물고 있음")
+                       ? L("%@개 꺼내 둠", "\(inventory.held.count)")
+                       : L("%@개 물고 있음", "\(inventory.concealed.count)"))
                     .font(.headline)
                 Text(statusLine)
                     .font(.caption2)
@@ -167,11 +167,11 @@ struct QuickPanelView: View {
                     Image(systemName: anyCollapsed ? "eye" : "eye.slash")
                     Text(anyCollapsed
                          ? (inventory.concealed.isEmpty
-                            ? "숨긴 것 꺼내 보기"
-                            : "숨긴 \(inventory.concealed.count)개 꺼내 보기")
-                         : "다시 감추기")
+                            ? L("숨긴 것 꺼내 보기")
+                            : L("숨긴 %@개 꺼내 보기", "\(inventory.concealed.count)"))
+                         : L("다시 감추기"))
                         .fontWeight(.semibold)
-                    Text("· 재시작 없이")
+                    Text(L("· 재시작 없이"))
                         .font(.caption2)
                         .opacity(0.75)
                 }
@@ -189,8 +189,8 @@ struct QuickPanelView: View {
     /// no toggleable group — "감춰져 있습니다" beside a button that cannot
     /// reveal anything is worse than silence.
     private var statusLine: String {
-        guard engine.hasToggleableGroup else { return "항상 숨김만 있습니다" }
-        return anyCollapsed ? "지금 감춰져 있습니다" : "지금 펼쳐져 있습니다"
+        guard engine.hasToggleableGroup else { return L("항상 숨김만 있습니다") }
+        return anyCollapsed ? L("지금 감춰져 있습니다") : L("지금 펼쳐져 있습니다")
     }
 
     // MARK: - Groups
@@ -223,16 +223,16 @@ struct QuickPanelView: View {
                 Image(systemName: "circle.fill")
                     .font(.system(size: 5))
                     .foregroundStyle(.orange)
-                    .help("숨겨진 사이에 이 아이콘이 바뀌었습니다")
+                    .help(L("숨겨진 사이에 이 아이콘이 바뀌었습니다"))
             }
 
             Spacer(minLength: 6)
 
             if inventory.pendingMove(for: item) != nil {
-                Text(inventory.isSystemManaged(item) ? "다음 로그인" : "재시작 대기")
+                Text(inventory.isSystemManaged(item) ? L("다음 로그인") : L("재시작 대기"))
                     .font(.caption2)
                     .foregroundStyle(inventory.isSystemManaged(item) ? Color.secondary : Color.orange)
-                Button("취소") { inventory.cancelMove(for: item) }
+                Button(L("취소")) { inventory.cancelMove(for: item) }
                     .buttonStyle(.borderless)
                     .controlSize(.small)
             } else if inventory.canMove(item) {
@@ -243,11 +243,11 @@ struct QuickPanelView: View {
                     Button {
                         inventory.reorder(item, towardLeft: true)
                     } label: { Image(systemName: "chevron.left") }
-                        .help("왼쪽으로")
+                        .help(L("왼쪽으로"))
                     Button {
                         inventory.reorder(item, towardLeft: false)
                     } label: { Image(systemName: "chevron.right") }
-                        .help("오른쪽으로")
+                        .help(L("오른쪽으로"))
                 }
                 .buttonStyle(.borderless)
                 .controlSize(.regular)
@@ -255,7 +255,7 @@ struct QuickPanelView: View {
                 // One button, and it says where the icon is going. The
                 // destination is the other side of the boundary, which is what
                 // "put in" and "take out" mean with a single group.
-                Button(currentZone == .visible ? "넣기" : "꺼내기") {
+                Button(currentZone == .visible ? L("넣기") : L("꺼내기")) {
                     move(item, from: currentZone)
                 }
                 .controlSize(.regular)
@@ -289,10 +289,10 @@ struct QuickPanelView: View {
                     // Counted in apps, because that is what the button does.
                     // Counting icons overstated it: two icons from one app is
                     // one quit, not two.
-                    Text("\(appsToRestart.count)개 앱을 재시작하면 적용됩니다")
+                    Text(L("%@개 앱을 재시작하면 적용됩니다", "\(appsToRestart.count)"))
                         .font(.caption)
                     Spacer()
-                    Button("적용") { onRestart(waiting) }
+                    Button(L("적용")) { onRestart(waiting) }
                         .controlSize(.small)
                         .buttonStyle(.borderedProminent)
                 }
@@ -301,7 +301,7 @@ struct QuickPanelView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("아이콘마다 한 번뿐입니다.")
+                Text(L("아이콘마다 한 번뿐입니다."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -312,9 +312,9 @@ struct QuickPanelView: View {
                     Image(systemName: "moon.zzz")
                         .foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(waitingForLogin.count)개는 다음 로그인에 적용됩니다")
+                        Text(L("%@개는 다음 로그인에 적용됩니다", "\(waitingForLogin.count)"))
                             .font(.caption)
-                        Text("제어 센터는 껐다 켜지 않습니다. 자리는 이미 기록해 뒀습니다.")
+                        Text(L("제어 센터는 껐다 켜지 않습니다. 자리는 이미 기록해 뒀습니다."))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -332,19 +332,19 @@ struct QuickPanelView: View {
     /// can make them again — and because it needs no restart to explain.
     private var utilityRow: some View {
         HStack(spacing: 10) {
-            Text("위치")
+            Text(L("위치"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Button {
                 onMoveSelf(SelfPlacement.step)
             } label: { Image(systemName: "chevron.left") }
                 .disabled(!canMoveSelf(SelfPlacement.step))
-                .help("슬라임을 왼쪽으로")
+                .help(L("슬라임을 왼쪽으로"))
             Button {
                 onMoveSelf(-SelfPlacement.step)
             } label: { Image(systemName: "chevron.right") }
                 .disabled(!canMoveSelf(-SelfPlacement.step))
-                .help("슬라임을 오른쪽으로")
+                .help(L("슬라임을 오른쪽으로"))
 
             Spacer(minLength: 8)
 
@@ -352,11 +352,11 @@ struct QuickPanelView: View {
                 // Always-hidden groups do not open on a normal click, which
                 // makes their icons unreachable without dismantling the
                 // group. This is the deliberate way in.
-                Button("항상 숨김까지", action: onRevealAll)
+                Button(L("항상 숨김까지"), action: onRevealAll)
                     .buttonStyle(.link)
                     .font(.caption)
             }
-            Button("설정…", action: onOpenSettings)
+            Button(L("설정…"), action: onOpenSettings)
                 .buttonStyle(.link)
                 .font(.caption)
         }
@@ -375,9 +375,9 @@ struct QuickPanelView: View {
         HStack(spacing: 10) {
             Button { CreatorLinks.open(CreatorLinks.home) } label: {
                 HStack(spacing: 5) {
-                    Text("제작자 Ai싱크클럽")
+                    Text(L("제작자 Ai싱크클럽"))
                         .fontWeight(.semibold)
-                    Text("- 싱크 제작")
+                    Text(L("- 싱크 제작"))
                     Image(systemName: "arrow.up.right")
                         .font(.system(size: 8, weight: .semibold))
                 }
@@ -393,8 +393,8 @@ struct QuickPanelView: View {
 
             Spacer(minLength: 8)
 
-            MarkButton(mark: .youtube, url: CreatorLinks.youTube, label: "유튜브")
-            MarkButton(mark: .threads, url: CreatorLinks.threads, label: "쓰레드")
+            MarkButton(mark: .youtube, url: CreatorLinks.youTube, label: L("유튜브"))
+            MarkButton(mark: .threads, url: CreatorLinks.threads, label: L("쓰레드"))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
@@ -416,17 +416,18 @@ struct QuickPanelView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.down.circle.fill")
                         .foregroundStyle(Color.accentColor)
-                    Text("새 버전 \(config.latestVersion ?? "")이 있습니다")
+                    Text(L("새 버전 %@이 있습니다", config.latestVersion ?? ""))
                         .font(.system(size: 12, weight: .semibold))
                     Spacer(minLength: 4)
-                    Text("업데이트")
+                    Text(L("업데이트"))
                         .font(.caption)
                         .foregroundStyle(Color.accentColor)
                 }
                 .modifier(UpdateRowChrome())
             }
             .buttonStyle(.plain)
-            .help("지금 \(config.currentVersion) → \(config.latestVersion ?? "")")
+            .help(L("지금 %1$@ → %2$@", config.currentVersion,
+                    config.latestVersion ?? ""))
         } else {
             Button { config.checkNow() } label: {
                 HStack(spacing: 8) {
@@ -439,7 +440,7 @@ struct QuickPanelView: View {
                         .foregroundStyle(.secondary)
                     Spacer(minLength: 4)
                     if !config.isChecking {
-                        Text("업데이트 확인")
+                        Text(L("업데이트 확인"))
                             .font(.caption)
                             .foregroundStyle(Color.accentColor)
                     }
@@ -453,9 +454,9 @@ struct QuickPanelView: View {
     }
 
     private var checkLabel: String {
-        if config.isChecking { return "확인 중…" }
-        if config.lastCheckedAt != nil { return "최신입니다 · 버전 \(config.currentVersion)" }
-        return "버전 \(config.currentVersion)"
+        if config.isChecking { return L("확인 중…") }
+        if config.lastCheckedAt != nil { return L("최신입니다 · 버전 %@", config.currentVersion) }
+        return L("버전 %@", config.currentVersion)
     }
 
     // MARK: - Actions

@@ -51,8 +51,8 @@ public final class MenuBarInventory: ObservableObject {
         /// What the user has to do about it.
         public var instruction: String {
             switch desired {
-            case .hidden: return "슬라임 왼쪽으로 ⌘드래그"
-            case .visible: return "슬라임 오른쪽으로 ⌘드래그"
+            case .hidden: return L("슬라임 왼쪽으로 ⌘드래그")
+            case .visible: return L("슬라임 오른쪽으로 ⌘드래그")
             }
         }
     }
@@ -335,7 +335,7 @@ public final class MenuBarInventory: ObservableObject {
 
             return Item(
                 id: snapshot.id,
-                ownerName: snapshot.ownerName ?? "알 수 없는 앱",
+                ownerName: snapshot.ownerName ?? L("알 수 없는 앱"),
                 bundleIdentifier: snapshot.bundleIdentifier,
                 title: snapshot.title,
                 frame: snapshot.frame,

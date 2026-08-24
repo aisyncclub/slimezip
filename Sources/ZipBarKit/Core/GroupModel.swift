@@ -15,8 +15,8 @@ public struct MenuBarGroup: Identifiable, Codable, Hashable, Sendable {
 
         public var displayName: String {
             switch self {
-            case .collapsible: return "접기/펴기"
-            case .alwaysHidden: return "항상 숨김"
+            case .collapsible: return L("접기/펴기")
+            case .alwaysHidden: return L("항상 숨김")
             }
         }
     }
@@ -91,7 +91,7 @@ public struct MenuBarLayout: Codable, Hashable, Sendable {
     /// What a first-run user gets: one ordinary collapsible group.
     public static var starter: MenuBarLayout {
         MenuBarLayout(groups: [
-            MenuBarGroup(name: "숨김", symbolName: "chevron.left")
+            MenuBarGroup(name: L("숨김"), symbolName: "chevron.left")
         ])
     }
 

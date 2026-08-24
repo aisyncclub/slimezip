@@ -38,7 +38,7 @@ public final class SpacerStrategy: HidingStrategy {
         canClickRemotely: false,
         canCapture: false,
         backend: .spacer,
-        notes: ["노치 뒤의 아이콘은 이 방식으로 꺼낼 수 없습니다."]
+        notes: [L("노치 뒤의 아이콘은 이 방식으로 꺼낼 수 없습니다.")]
     )
 
     public var collapseDidChange: ((MenuBarGroup.ID, Bool) -> Void)?
@@ -148,9 +148,9 @@ public final class SpacerStrategy: HidingStrategy {
                 to: button,
                 symbolName: "chevron.compact.left",
                 fallbackText: "|",
-                accessibilityDescription: "\(group.name) 경계"
+                accessibilityDescription: L("%@ 경계", group.name)
             )
-            button.toolTip = "\(group.name) 경계 — 숨길 아이콘을 이 왼쪽으로 ⌘드래그하세요"
+            button.toolTip = L("%@ 경계 — 숨길 아이콘을 이 왼쪽으로 ⌘드래그하세요", group.name)
         } else {
             button.image = nil
             button.title = ""
@@ -233,7 +233,7 @@ public final class SpacerStrategy: HidingStrategy {
         // No glyph: the slime is the only thing of ours the user should see.
         separator.button?.image = nil
         separator.button?.title = ""
-        separator.button?.toolTip = "\(group.name) 경계 — 숨길 아이콘을 슬라임 왼쪽으로 ⌘드래그하세요"
+        separator.button?.toolTip = L("%@ 경계 — 숨길 아이콘을 슬라임 왼쪽으로 ⌘드래그하세요", group.name)
 
         items[group.id] = GroupItems(separator: separator)
         applyBoundaryGlyph(separator, group: group, visible: boundaryVisible)

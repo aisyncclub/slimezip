@@ -40,23 +40,22 @@ struct IconListView: View {
             inventory.refresh()
         }
         .confirmationDialog(
-            restartRequest.map { "재시작: \($0.names)" } ?? "",
+            restartRequest.map { L("재시작: %@", $0.names) } ?? "",
             isPresented: Binding(
                 get: { restartRequest != nil },
                 set: { if !$0 { restartRequest = nil } }
             ),
             titleVisibility: .visible
         ) {
-            Button("재시작") { performRestarts() }
-            Button("취소", role: .cancel) { restartRequest = nil }
+            Button(L("재시작")) { performRestarts() }
+            Button(L("취소"), role: .cancel) { restartRequest = nil }
         } message: {
-            Text("아이콘 위치는 앱이 시작할 때 읽히므로, 옮긴 위치는 재시작해야 "
-                 + "적용됩니다. 저장하지 않은 작업이 있는 앱은 스스로 거부할 수 있습니다.")
+            Text(L("아이콘 위치는 앱이 시작할 때 읽히므로, 옮긴 위치는 재시작해야 적용됩니다. 저장하지 않은 작업이 있는 앱은 스스로 거부할 수 있습니다."))
         }
-        .alert("문제가 있었습니다", isPresented: Binding(
+        .alert(L("문제가 있었습니다"), isPresented: Binding(
             get: { problem != nil }, set: { if !$0 { problem = nil } }
         )) {
-            Button("확인", role: .cancel) { problem = nil }
+            Button(L("확인"), role: .cancel) { problem = nil }
         } message: {
             Text(problem ?? "")
         }
@@ -75,28 +74,26 @@ struct IconListView: View {
         VStack(spacing: 12) {
             SlimeDecor.Portrait(stage: 1, height: 46)
                 .opacity(0.65)
-            Text("어떤 아이콘이 메뉴바에 있는지 보려면 접근성 권한이 필요합니다")
+            Text(L("어떤 아이콘이 메뉴바에 있는지 보려면 접근성 권한이 필요합니다"))
                 .font(.headline)
-            Text("macOS 26은 상태 아이템을 제어 센터가 대신 표시해서, 권한 없이는 "
-                 + "어느 아이콘이 어느 앱 것인지 알 수 없습니다.")
+            Text(L("macOS 26은 상태 아이템을 제어 센터가 대신 표시해서, 권한 없이는 어느 아이콘이 어느 앱 것인지 알 수 없습니다."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 380)
-            Button("접근성 권한 요청") { inventory.requestAuthorization() }
+            Button(L("접근성 권한 요청")) { inventory.requestAuthorization() }
                 .buttonStyle(.borderedProminent)
 
             // A grant given while the app is running does not reach this
             // process — a relaunch is the fix, so it is offered here rather
             // than left for the user to discover.
             VStack(spacing: 4) {
-                Text("이미 허용했는데 이 화면이 남아 있다면, 실행 중이던 앱에는 "
-                     + "권한이 늦게 전달됩니다. 재시작하면 바로 적용됩니다.")
+                Text(L("이미 허용했는데 이 화면이 남아 있다면, 실행 중이던 앱에는 권한이 늦게 전달됩니다. 재시작하면 바로 적용됩니다."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 380)
-                Button("SlimeZIP 재시작") { SelfRelauncher.relaunch() }
+                Button(L("SlimeZIP 재시작")) { SelfRelauncher.relaunch() }
             }
             .padding(.top, 6)
         }
@@ -126,16 +123,16 @@ struct IconListView: View {
                     zoneSection(
                         title: boundary.name,
                         subtitle: boundary.behavior == .alwaysHidden
-                            ? "슬라임이 계속 물고 있습니다"
-                            : "슬라임을 누르면 여기가 열리고 닫힙니다",
+                            ? L("슬라임이 계속 물고 있습니다")
+                            : L("슬라임을 누르면 여기가 열리고 닫힙니다"),
                         zone: .group(index),
-                        empty: "여기는 아직 비어 있습니다. 아래에서 넣어보세요.")
+                        empty: L("여기는 아직 비어 있습니다. 아래에서 넣어보세요."))
                 }
                 zoneSection(
-                    title: "밖에 나와 있는 것",
-                    subtitle: "언제나 메뉴바에 보입니다",
+                    title: L("밖에 나와 있는 것"),
+                    subtitle: L("언제나 메뉴바에 보입니다"),
                     zone: .visible,
-                    empty: "메뉴바에 보이는 아이콘이 없습니다.")
+                    empty: L("메뉴바에 보이는 아이콘이 없습니다."))
             }
             Divider()
             footer
@@ -149,10 +146,10 @@ struct IconListView: View {
         HStack(spacing: 8) {
             Image(systemName: "clock.arrow.circlepath")
                 .foregroundStyle(.orange)
-            Text("\(waiting.count)개 이동이 재시작을 기다립니다")
+            Text(L("%@개 이동이 재시작을 기다립니다", "\(waiting.count)"))
                 .font(.callout)
             Spacer()
-            Button("모두 적용") {
+            Button(L("모두 적용")) {
                 restartRequest = RestartRequest(
                     id: waiting.map(\.preferenceKey).joined(),
                     items: waiting)
@@ -186,7 +183,7 @@ struct IconListView: View {
         var out: [(MenuBarZone, String)] = inventory.boundaries.enumerated().map {
             (.group($0.offset), $0.element.name)
         }
-        out.append((.visible, "밖으로 꺼내기"))
+        out.append((.visible, L("밖으로 꺼내기")))
         return out.filter { $0.0 != current }
     }
 
@@ -201,7 +198,7 @@ struct IconListView: View {
                         Image(systemName: "circle.fill")
                             .font(.system(size: 6))
                             .foregroundStyle(.orange)
-                            .help("숨겨진 사이에 이 아이콘이 바뀌었습니다")
+                            .help(L("숨겨진 사이에 이 아이콘이 바뀌었습니다"))
                     }
                 }
                 if let title = item.title, !title.isEmpty {
@@ -215,20 +212,20 @@ struct IconListView: View {
             Spacer()
 
             if let record = inventory.pendingMove(for: item) {
-                Text(record.side == .hidden ? "숨김 예약" : "표시 예약")
+                Text(record.side == .hidden ? L("숨김 예약") : L("표시 예약"))
                     .font(.caption)
                     .foregroundStyle(.orange)
-                Button("취소") { inventory.cancelMove(for: item) }
+                Button(L("취소")) { inventory.cancelMove(for: item) }
                     .buttonStyle(.borderless)
-                Button("재시작") {
+                Button(L("재시작")) {
                     restartRequest = RestartRequest(id: item.preferenceKey, items: [item])
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
             } else {
-                Button("열기") { inventory.press(item) }
+                Button(L("열기")) { inventory.press(item) }
                     .buttonStyle(.borderless)
-                    .help("\(item.ownerName) 아이콘을 클릭합니다 — 숨겨져 있어도 됩니다")
+                    .help(L("%@ 아이콘을 클릭합니다 — 숨겨져 있어도 됩니다", item.ownerName))
 
                 if inventory.canMove(item) {
                     let targets = destinations(besides: currentZone)
@@ -239,7 +236,7 @@ struct IconListView: View {
                             .buttonStyle(.bordered)
                             .controlSize(.small)
                     } else {
-                        Menu("옮기기") {
+                        Menu(L("옮기기")) {
                             ForEach(Array(targets.enumerated()), id: \.offset) { _, target in
                                 Button(target.1) { move(item, to: target.0) }
                             }
@@ -250,7 +247,7 @@ struct IconListView: View {
                 } else {
                     Text("—")
                         .foregroundStyle(.tertiary)
-                        .help("이 아이콘은 앱을 특정할 수 없어 옮길 수 없습니다")
+                        .help(L("이 아이콘은 앱을 특정할 수 없어 옮길 수 없습니다"))
                 }
             }
         }
@@ -269,10 +266,7 @@ struct IconListView: View {
     private var footer: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "info.circle").foregroundStyle(.secondary)
-            Text("숨기기·꺼내기는 아이콘의 자리를 옮기는 일이라 그 앱을 한 번 "
-                 + "재시작해야 합니다. 자리가 정해진 뒤로는 슬라임 클릭만으로 즉시 "
-                 + "감추고 꺼낼 수 있습니다. ⌘드래그로 직접 옮기면 재시작 없이 "
-                 + "반영되며, 그 배치가 항상 우선합니다.")
+            Text(L("숨기기·꺼내기는 아이콘의 자리를 옮기는 일이라 그 앱을 한 번 재시작해야 합니다. 자리가 정해진 뒤로는 슬라임 클릭만으로 즉시 감추고 꺼낼 수 있습니다. ⌘드래그로 직접 옮기면 재시작 없이 반영되며, 그 배치가 항상 우선합니다."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -282,7 +276,7 @@ struct IconListView: View {
             Button { inventory.refresh() } label: {
                 Image(systemName: "arrow.clockwise")
             }
-            .help("다시 검사")
+            .help(L("다시 검사"))
         }
         .padding(10)
     }
@@ -291,11 +285,11 @@ struct IconListView: View {
 
     private func move(_ item: MenuBarInventory.Item, to zone: MenuBarZone) {
         guard !inventory.boundaries.isEmpty else {
-            problem = "경계 위치를 아직 알 수 없습니다. 설정을 한 번 닫았다 열어보세요."
+            problem = L("경계 위치를 아직 알 수 없습니다. 설정을 한 번 닫았다 열어보세요.")
             return
         }
         if !inventory.move(item, toZone: zone) {
-            problem = "\(item.ownerName)의 아이콘 위치를 고쳐 쓸 수 없었습니다."
+            problem = L("%@의 아이콘 위치를 고쳐 쓸 수 없었습니다.", item.ownerName)
         }
     }
 
@@ -319,11 +313,9 @@ struct IconListView: View {
             case .restarted, .notRunning:
                 break
             case .refusedToQuit:
-                problem = "\(item.ownerName)이(가) 종료를 거부했습니다. 저장하지 않은 "
-                    + "작업을 정리한 뒤 그 앱을 직접 재시작하면 적용됩니다."
+                problem = L("%@이(가) 종료를 거부했습니다. 저장하지 않은 작업을 정리한 뒤 그 앱을 직접 재시작하면 적용됩니다.", item.ownerName)
             case .failedToRelaunch:
-                problem = "\(item.ownerName)을(를) 다시 실행하지 못했습니다. 직접 "
-                    + "실행하면 옮긴 위치가 적용됩니다."
+                problem = L("%@을(를) 다시 실행하지 못했습니다. 직접 실행하면 옮긴 위치가 적용됩니다.", item.ownerName)
             }
             restartNext(Array(remaining.dropFirst()))
         }

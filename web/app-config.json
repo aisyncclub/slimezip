@@ -5,6 +5,8 @@
     "text": "오픈베타 · 무료 스킬 배포 중",
     "url": "https://aisyncclub.com/market",
     "enabled": true,
-    "logo": "syncmarket"
+    "logo": "syncmarket",
+    "badge_en": "SyncMarket",
+    "text_en": "Open beta · free skills"
   }
 }

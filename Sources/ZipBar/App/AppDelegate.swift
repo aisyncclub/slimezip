@@ -783,9 +783,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let collapsed = engine.layout.groups.contains { engine.collapseState[$0.id] == true }
         let owned = inventory.held.count
         button.toolTip = hidden == 0
-            ? (owned == 0 ? "SlimeZIP — 숨겨진 아이콘 없음" : "SlimeZIP — \(owned)개 꺼내 둠")
-            : "SlimeZIP — \(hidden)개 숨김\(inventory.hasActivity ? " · 변화 있음" : "")"
-        button.setAccessibilityLabel("SlimeZIP, \(hidden)개 숨김, \(collapsed ? "접힘" : "펼침")")
+            ? (owned == 0 ? L("SlimeZIP — 숨겨진 아이콘 없음")
+                          : L("SlimeZIP — %@개 꺼내 둠", "\(owned)"))
+            : L("SlimeZIP — %@개 숨김", "\(hidden)")
+                + (inventory.hasActivity ? L(" · 변화 있음") : "")
+        button.setAccessibilityLabel(L("SlimeZIP, %1$@개 숨김, %2$@", "\(hidden)",
+                                       collapsed ? L("접힘") : L("펼침")))
     }
 
     @objc private func slimeClicked() {
@@ -890,15 +893,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// replace itself with something else.
     private func runUpdate() {
         let alert = NSAlert()
-        alert.messageText = "SlimeZIP \(remoteConfig.latestVersion ?? "")로 업데이트할까요?"
+        alert.messageText = L("SlimeZIP %@로 업데이트할까요?", remoteConfig.latestVersion ?? "")
         alert.informativeText =
-            "지금 \(remoteConfig.currentVersion) → \(remoteConfig.latestVersion ?? "")\n\n"
-            + "GitHub 릴리스에서 내려받아 다음 경로를 교체하고 다시 실행합니다.\n"
+            L("지금 %1$@ → %2$@", remoteConfig.currentVersion,
+               remoteConfig.latestVersion ?? "") + "\n\n"
+            + L("GitHub 릴리스에서 내려받아 다음 경로를 교체하고 다시 실행합니다.") + "\n"
             + "\(Updater.installedURL.path)\n\n"
-            + "설정과 접근성 권한은 그대로 유지됩니다."
-        alert.addButton(withTitle: "업데이트")
-        alert.addButton(withTitle: "릴리스 페이지 열기")
-        alert.addButton(withTitle: "취소")
+            + L("설정과 접근성 권한은 그대로 유지됩니다.")
+        alert.addButton(withTitle: L("업데이트"))
+        alert.addButton(withTitle: L("릴리스 페이지 열기"))
+        alert.addButton(withTitle: L("취소"))
         NSApp.activate(ignoringOtherApps: true)
 
         switch alert.runModal() {
@@ -917,11 +921,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Success never gets here — the handoff quits this process.
             guard case .failure(let error) = result else { return }
             let failed = NSAlert()
-            failed.messageText = "업데이트하지 못했습니다"
+            failed.messageText = L("업데이트하지 못했습니다")
             failed.informativeText = (error as? Updater.Failure)?.errorDescription
                 ?? error.localizedDescription
-            failed.addButton(withTitle: "확인")
-            failed.addButton(withTitle: "릴리스 페이지 열기")
+            failed.addButton(withTitle: L("확인"))
+            failed.addButton(withTitle: L("릴리스 페이지 열기"))
             NSApp.activate(ignoringOtherApps: true)
             if failed.runModal() == .alertSecondButtonReturn {
                 CreatorLinks.open(RemoteConfig.releasesPage)
@@ -1073,11 +1077,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
-        let settings = NSMenuItem(title: "설정…", action: #selector(openSettings), keyEquivalent: ",")
+        let settings = NSMenuItem(title: L("설정…"), action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
 
-        let quit = NSMenuItem(title: "SlimeZIP 종료", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(title: L("SlimeZIP 종료"), action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
 
@@ -1120,7 +1124,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "SlimeZIP 설정"
+        window.title = L("SlimeZIP 설정")
         window.contentViewController = NSHostingController(rootView: root)
         window.center()
         window.isReleasedWhenClosed = false

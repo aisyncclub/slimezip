@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import ZipBarKit
 
 /// The ask for a GitHub star.
 ///
@@ -86,7 +87,7 @@ struct StarPromptView: View {
                         .font(.system(size: 12))
                         .foregroundStyle(Color.yellow)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("쓸 만하셨다면 GitHub에 별 하나 부탁드립니다")
+                        Text(L("쓸 만하셨다면 GitHub에 별 하나 부탁드립니다"))
                             .font(.system(size: 12, weight: .medium))
                         Text(starsLine)
                             .font(.system(size: 10))
@@ -109,7 +110,7 @@ struct StarPromptView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help("다시 묻지 않습니다")
+            .help(L("다시 묻지 않습니다"))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
@@ -122,8 +123,8 @@ struct StarPromptView: View {
         // Stated only when it is known and not zero. "0 stars" reads as a
         // plea rather than an invitation.
         if let stars = stars ?? prompt.stars, stars > 0 {
-            return "무료로 쓰는 오픈소스입니다 · 지금 별 \(stars)개"
+            return L("무료로 쓰는 오픈소스입니다 · 지금 별 %@개", "\(stars)")
         }
-        return "무료로 쓰는 오픈소스입니다 · 한 번만 눌러 주시면 됩니다"
+        return L("무료로 쓰는 오픈소스입니다 · 한 번만 눌러 주시면 됩니다")
     }
 }

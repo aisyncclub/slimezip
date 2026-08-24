@@ -74,7 +74,7 @@ public enum HidingStrategyError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .unsupportedOnThisOS(let backend):
-            return "\(backend.rawValue) 백엔드는 현재 macOS 버전에서 동작하지 않습니다."
+            return L("%@ 백엔드는 현재 macOS 버전에서 동작하지 않습니다.", backend.rawValue)
         }
     }
 }

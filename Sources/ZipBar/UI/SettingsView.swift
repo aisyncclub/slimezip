@@ -35,16 +35,16 @@ struct SettingsView: View {
     }
 
     private let sections: [Section] = [
-        Section(tab: .welcome, title: "시작하기", symbol: "sparkles",
-                blurb: "무엇인지, 어떻게 쓰는지"),
-        Section(tab: .icons, title: "아이콘", symbol: "menubar.rectangle",
-                blurb: "넣고 빼기"),
-        Section(tab: .groups, title: "그룹", symbol: "square.stack.3d.up",
-                blurb: "묶어서 관리"),
-        Section(tab: .creator, title: "제작자", symbol: "person.2",
-                blurb: "Ai싱크클럽 · 싱크 제작"),
-        Section(tab: .diagnostics, title: "진단", symbol: "stethoscope",
-                blurb: "이 맥에서 되는 것"),
+        Section(tab: .welcome, title: L("시작하기"), symbol: "sparkles",
+                blurb: L("무엇인지, 어떻게 쓰는지")),
+        Section(tab: .icons, title: L("아이콘"), symbol: "menubar.rectangle",
+                blurb: L("넣고 빼기")),
+        Section(tab: .groups, title: L("그룹"), symbol: "square.stack.3d.up",
+                blurb: L("묶어서 관리")),
+        Section(tab: .creator, title: L("제작자"), symbol: "person.2",
+                blurb: L("Ai싱크클럽 · 싱크 제작")),
+        Section(tab: .diagnostics, title: L("진단"), symbol: "stethoscope",
+                blurb: L("이 맥에서 되는 것")),
     ]
 
     var body: some View {
@@ -155,11 +155,11 @@ struct CapabilityBanner: View {
     private var headline: String {
         switch capabilities.backend {
         case .spacer:
-            return "스페이서 백엔드로 동작 중 — 권한 없이 그룹 접기/펴기가 가능합니다."
+            return L("스페이서 백엔드로 동작 중 — 권한 없이 그룹 접기/펴기가 가능합니다.")
         case .menuServiceBridge:
-            return "브릿지 백엔드로 동작 중 — 열거·이동·원격 클릭까지 가능합니다."
+            return L("브릿지 백엔드로 동작 중 — 열거·이동·원격 클릭까지 가능합니다.")
         case .degraded:
-            return "현재 macOS 버전에서 동작하는 백엔드를 찾지 못했습니다."
+            return L("현재 macOS 버전에서 동작하는 백엔드를 찾지 못했습니다.")
         }
     }
 }
@@ -169,17 +169,17 @@ struct DiagnosticsView: View {
 
     private var rows: [(String, Bool)] {
         [
-            ("숨기기", capabilities.canHide),
-            ("아이템 열거", capabilities.canEnumerate),
-            ("순서 이동", capabilities.canMove),
-            ("원격 클릭", capabilities.canClickRemotely),
-            ("아이콘 캡처", capabilities.canCapture),
+            (L("숨기기"), capabilities.canHide),
+            (L("아이템 열거"), capabilities.canEnumerate),
+            (L("순서 이동"), capabilities.canMove),
+            (L("원격 클릭"), capabilities.canClickRemotely),
+            (L("아이콘 캡처"), capabilities.canCapture),
         ]
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("현재 백엔드: \(capabilities.backend.rawValue)")
+            Text(L("현재 백엔드: %@", capabilities.backend.rawValue))
                 .font(.headline)
 
             Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
@@ -207,22 +207,20 @@ struct DiagnosticsView: View {
             // server is an app people are right to distrust, and the setting
             // is worthless if nobody knows it exists.
             VStack(alignment: .leading, spacing: 4) {
-                Label("인터넷 사용", systemImage: "network")
+                Label(L("인터넷 사용"), systemImage: "network")
                     .font(.headline)
-                Text("여섯 시간에 한 번, 패널을 열 때만 두 곳을 읽습니다 — "
-                     + "새 버전이 나왔는지(GitHub 릴리스), 그리고 아래 띠에 띄울 문구입니다. "
-                     + "보내는 것은 없고, 아이콘 목록이나 사용 기록은 어디에도 올라가지 않습니다.")
+                Text(L("여섯 시간에 한 번, 패널을 열 때만 두 곳을 읽습니다 — 새 버전이 나왔는지(GitHub 릴리스), 그리고 아래 띠에 띄울 문구입니다. 보내는 것은 없고, 아이콘 목록이나 사용 기록은 어디에도 올라가지 않습니다."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("끄려면: defaults write com.zipbar.ZipBar com.zipbar.checkForUpdates -bool NO")
+                Text(L("끄려면: defaults write com.zipbar.ZipBar com.zipbar.checkForUpdates -bool NO"))
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.tertiary)
                     .textSelection(.enabled)
             }
 
             Divider()
-            Text("터미널에서 `zipbar-probe capabilities`를 실행하면 각 백엔드가 이 macOS에서 실제로 무엇을 반환하는지 확인할 수 있습니다.")
+            Text(L("터미널에서 `zipbar-probe capabilities`를 실행하면 각 백엔드가 이 macOS에서 실제로 무엇을 반환하는지 확인할 수 있습니다."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 

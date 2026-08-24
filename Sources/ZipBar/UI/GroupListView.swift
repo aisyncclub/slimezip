@@ -34,7 +34,7 @@ struct GroupListView: View {
                         if engine.collapseState[group.id] == true {
                             Image(systemName: "eye.slash")
                                 .foregroundStyle(.secondary)
-                                .help("접힘")
+                                .help(L("접힘"))
                         }
                     }
                     .tag(group.id)
@@ -48,12 +48,12 @@ struct GroupListView: View {
 
             HStack(spacing: 4) {
                 Button {
-                    engine.addGroup(named: "그룹 \(engine.layout.groups.count + 1)")
+                    engine.addGroup(named: L("그룹 %@", "\(engine.layout.groups.count + 1)"))
                     selection = engine.layout.groups.last?.id
                 } label: {
                     Image(systemName: "plus")
                 }
-                .help("그룹 추가")
+                .help(L("그룹 추가"))
 
                 Button {
                     if let selection {
@@ -64,7 +64,7 @@ struct GroupListView: View {
                     Image(systemName: "minus")
                 }
                 .disabled(selection == nil)
-                .help("선택한 그룹 삭제")
+                .help(L("선택한 그룹 삭제"))
 
                 Spacer()
             }
@@ -84,7 +84,7 @@ struct GroupListView: View {
                 Image(systemName: "square.stack.3d.up")
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)
-                Text("그룹을 선택하거나 추가하세요")
+                Text(L("그룹을 선택하거나 추가하세요"))
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -102,9 +102,9 @@ struct GroupListView: View {
 
         return Form {
             Section {
-                TextField("이름", text: bound.name)
+                TextField(L("이름"), text: bound.name)
 
-                Picker("동작", selection: bound.behavior) {
+                Picker(L("동작"), selection: bound.behavior) {
                     ForEach(MenuBarGroup.Behavior.allCases, id: \.self) { behavior in
                         Text(behavior.displayName).tag(behavior)
                     }
@@ -112,23 +112,23 @@ struct GroupListView: View {
             }
 
             Section {
-                Toggle("포인터가 메뉴바를 벗어나면 다시 접기", isOn: bound.autoHide)
+                Toggle(L("포인터가 메뉴바를 벗어나면 다시 접기"), isOn: bound.autoHide)
                 if bound.wrappedValue.autoHide {
-                    LabeledContent("지연") {
+                    LabeledContent(L("지연")) {
                         HStack {
                             Slider(value: bound.autoHideDelay, in: 1...15, step: 1)
-                            Text("\(Int(bound.wrappedValue.autoHideDelay))초")
+                            Text(L("%@초", "\(Int(bound.wrappedValue.autoHideDelay))"))
                                 .monospacedDigit()
                                 .frame(width: 34, alignment: .trailing)
                         }
                     }
                 }
             } header: {
-                Text("자동 숨김")
+                Text(L("자동 숨김"))
             }
 
             Section {
-                Button(engine.collapseState[group.id] == true ? "펴기" : "접기") {
+                Button(engine.collapseState[group.id] == true ? L("펴기") : L("접기")) {
                     engine.toggle(group.id)
                 }
                 .disabled(!engine.capabilities.canHide)
