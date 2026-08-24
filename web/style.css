@@ -331,6 +331,20 @@ h2.display .dim{color:rgba(11,31,27,.38)}
 .close-row{display:flex;gap:48px;align-items:flex-end;margin-top:64px}
 .close-copy{max-width:440px}
 .close-copy p{margin:0;font-size:14px;line-height:1.75;color:var(--muted)}
+/* The ask sits above the install button, not beside it: side by side they
+   compete, and the install is what the visitor came for. */
+.star-cta{
+  /* `flex` with a fitted width, not `inline-flex`: inline put it on the same
+     line as the install button and the two overlapped. */
+  display:flex;width:fit-content;align-items:center;gap:8px;margin-top:22px;
+  padding:9px 15px;border:1px solid rgba(11,31,27,.16);border-radius:999px;
+  font-size:14px;font-weight:600;color:var(--ink);
+  transition:background .2s,border-color .2s;
+}
+.star-cta svg{color:#f5c518}
+.star-cta:hover{background:rgba(245,197,24,.14);border-color:rgba(245,197,24,.5)}
+.close-copy .cta-arrow{margin-top:14px}
+
 .cta-arrow{display:inline-flex;align-items:flex-end;margin-top:26px}
 .cta-label{
   display:inline-flex;align-items:center;padding:11px 18px;

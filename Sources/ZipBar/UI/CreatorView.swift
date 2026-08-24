@@ -19,7 +19,11 @@ struct CreatorView: View {
         let logo: String?
     }
 
-    private let destinations: [Destination] = [
+    private var destinations: [Destination] {[
+        Destination(title: "GitHub — 별 눌러 주기",
+                    detail: config.stars.map { "소스 공개 · 지금 별 \($0)개" }
+                        ?? "소스 공개 · 별 하나가 큰 힘이 됩니다",
+                    url: CreatorLinks.repo, symbol: "star", logo: nil),
         Destination(title: "싱크마켓", detail: "AI 스킬·템플릿·자료 — 오픈베타 무료 배포 중",
                     url: CreatorLinks.syncMarket, symbol: "bag", logo: "syncmarket"),
         Destination(title: "링크 모음", detail: "커뮤니티, 강의, 자료실까지 한 곳에",
@@ -28,7 +32,7 @@ struct CreatorView: View {
                     url: CreatorLinks.youTube, symbol: "play.rectangle", logo: nil),
         Destination(title: "쓰레드", detail: "@ai_sync_club",
                     url: CreatorLinks.threads, symbol: "at", logo: nil),
-    ]
+    ]}
 
     var body: some View {
         ScrollView {

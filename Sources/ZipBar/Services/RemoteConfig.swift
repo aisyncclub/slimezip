@@ -23,6 +23,7 @@ final class RemoteConfig: ObservableObject {
     static let configURL = "https://aisyncclub.github.io/slimezip/app-config.json"
     static let releasesAPI = "https://api.github.com/repos/aisyncclub/slimezip/releases/latest"
     static let releasesPage = "https://github.com/aisyncclub/slimezip/releases/latest"
+    static let repoAPI = "https://api.github.com/repos/aisyncclub/slimezip"
 
     /// `defaults write com.zipbar.ZipBar com.zipbar.checkForUpdates -bool NO`
     static let enabledKey = "com.zipbar.checkForUpdates"
@@ -44,6 +45,10 @@ final class RemoteConfig: ObservableObject {
     /// panel cannot tell "no newer version" from "never looked", and those
     /// need different words.
     @Published private(set) var lastCheckedAt: Date?
+    /// How many stars the repository has, when the last check found out.
+    /// Carried here rather than fetched separately so the star prompt costs
+    /// no extra wake-up of its own.
+    @Published private(set) var stars: Int?
 
     private let defaults: UserDefaults
 
@@ -96,6 +101,7 @@ final class RemoteConfig: ObservableObject {
         defaults.set(Date().timeIntervalSince1970, forKey: Self.lastCheckKey)
         fetchPromo()
         fetchLatestVersion()
+        fetchStars()
     }
 
     /// What the user pressed a button to do.
@@ -108,6 +114,7 @@ final class RemoteConfig: ObservableObject {
         defaults.set(Date().timeIntervalSince1970, forKey: Self.lastCheckKey)
         fetchPromo()
         fetchLatestVersion()
+        fetchStars()
         // The fetch is silent on failure, so nothing else would ever clear
         // the flag on a machine with no network.
         DispatchQueue.main.asyncAfter(deadline: .now() + 9) { [weak self] in
@@ -170,7 +177,17 @@ final class RemoteConfig: ObservableObject {
         }.resume()
     }
 
+    private func fetchStars() {
+        get(Self.repoAPI) { [weak self] data in
+            guard let self,
+                  let repo = try? JSONDecoder().decode(RepoPayload.self, from: data)
+            else { return }
+            self.stars = repo.stargazers_count
+        }
+    }
+
     private struct ConfigPayload: Decodable { let promo: PromoBanner? }
+    private struct RepoPayload: Decodable { let stargazers_count: Int }
     private struct ReleasePayload: Decodable { let tag_name: String }
 }
 

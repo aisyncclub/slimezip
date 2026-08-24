@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let animator = SlimeAnimator()
     private var quickPanel: NSPopover?
     private let remoteConfig = RemoteConfig()
+    private let starPrompt = StarPrompt()
     private var dismissMonitor: Any?
     /// Current deformation and eye state, driven by the animator.
     private var slimeSquash: CGFloat = 0
@@ -825,11 +826,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // panel opening rather than a timer, so the network is touched while
         // the user is already looking at the app.
         remoteConfig.refresh()
+        starPrompt.recordPanelOpened()
+        // The count comes down with the update check, so it is handed across
+        // rather than fetched again.
+        if let stars = remoteConfig.stars { starPrompt.remember(stars: stars) }
 
         let content = QuickPanelView(
             inventory: inventory,
             engine: engine,
             config: remoteConfig,
+            starPrompt: starPrompt,
             onOpenSettings: { [weak self] in
                 self?.quickPanel?.performClose(nil)
                 self?.showSettings(selecting: .icons)

@@ -13,6 +13,10 @@
 
 [**설치하기**](docs/INSTALL.md) · [최신 릴리스](https://github.com/aisyncclub/slimezip/releases/latest) · [문제 해결](docs/INSTALL.md#4-문제가-생기면)
 
+[![GitHub stars](https://img.shields.io/github/stars/aisyncclub/slimezip?style=for-the-badge&logo=github&label=%EB%B3%84%20%EB%88%8C%EB%9F%AC%20%EC%A3%BC%EA%B8%B0&color=f5c518)](https://github.com/aisyncclub/slimezip/stargazers)
+
+**무료로 쓰셨다면 별 하나 부탁드립니다.** 만드는 사람에게는 그게 전부입니다.
+
 <sub>macOS 14 이상 · 무료 · 오픈소스 · 설치 1분</sub>
 
 </div>

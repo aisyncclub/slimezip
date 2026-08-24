@@ -9,6 +9,8 @@ enum CreatorLinks {
     /// The marketplace. Separate from `home`: the footer link points at
     /// the link hub, the banner points at the thing being advertised.
     static let syncMarket = "https://aisyncclub.com/market"
+    /// The repository. Where a star is left, and where the source is read.
+    static let repo = "https://github.com/aisyncclub/slimezip"
 
     static func open(_ string: String) {
         // The default browser, not an in-app view: these go somewhere else,

@@ -17,6 +17,7 @@ struct QuickPanelView: View {
     @ObservedObject var inventory: MenuBarInventory
     @ObservedObject var engine: MenuBarEngine
     @ObservedObject var config: RemoteConfig
+    @ObservedObject var starPrompt: StarPrompt
 
     var onOpenSettings: () -> Void
     var onToggle: () -> Void
@@ -106,6 +107,11 @@ struct QuickPanelView: View {
             Divider()
             credit
             updateRow
+            // Above the sponsored strip: this one is asking for something,
+            // and burying it under an advert would read as a second advert.
+            if starPrompt.shouldAsk {
+                StarPromptView(prompt: starPrompt, stars: config.stars)
+            }
             if promo.enabled && !promo.text.isEmpty {
                 PromoBannerView(promo: promo)
             }
