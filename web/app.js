@@ -138,8 +138,12 @@
     function frame() {
       img.src = 'img/slime-' + (blinking ? 'blink-' : '') + stage + ext;
     }
+    // The counter's unit comes from the markup, because this page ships in
+    // four languages and a suffix hardcoded here would print "3개" on the
+    // English one.
+    var unit = count.getAttribute('data-unit') || '';
     function label() {
-      count.textContent = (stage === 1 ? 0 : stage) + '개';
+      count.textContent = (stage === 1 ? 0 : stage) + unit;
     }
 
     // Preloaded so the first swap does not flash an empty box while the

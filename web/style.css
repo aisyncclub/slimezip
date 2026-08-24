@@ -53,6 +53,15 @@ section{padding:88px 0}
 /* Korean must break on word boundaries. The default lets the browser
    split mid-word, which turned "먹습니다" into "먹습 / 니다". */
 h1,h2,h3,p,li,summary,dd,dt{word-break:keep-all;overflow-wrap:break-word}
+
+/* `keep-all` is a Korean rule: it stops the browser splitting a word mid-
+   syllable. Japanese and Chinese have no spaces at all, so the same rule
+   makes a whole sentence one unbreakable run — the FAQ answers on the
+   Japanese page pushed the document 48px wider than the phone. Those
+   languages break between characters by default, which is correct for
+   them, so the rule is lifted rather than patched. */
+html[lang="ja"] :is(h1,h2,h3,p,li,summary,dd,dt),
+html[lang^="zh"] :is(h1,h2,h3,p,li,summary,dd,dt){word-break:normal}
 h1,h2,h3{line-height:1.18;letter-spacing:-.03em;margin:0}
 h2{font-size:clamp(30px,4vw,46px);font-weight:800}
 .lede{color:var(--muted);font-size:clamp(16px,1.5vw,18px);margin-top:14px}
@@ -106,6 +115,18 @@ nav{
 .nav-cta{background:var(--green);color:#fff;font-weight:700;font-size:14px;
   padding:10px 18px;border-radius:999px;transition:background .2s ease}
 .nav-cta:hover{background:var(--green-deep)}
+
+/* Language row. Sits under the nav rather than inside it: four more items
+   on a bar that already holds five would push the install button off a
+   narrow screen, and the choice is a page-level one, not navigation. */
+.lang-switch{
+  max-width:1120px;margin:0 auto;padding:0 24px 10px;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  font-size:13px;color:var(--muted);
+}
+.lang-switch b{color:var(--ink);font-weight:700}
+.lang-switch a{color:var(--muted)}
+.lang-switch a:hover{color:var(--green)}
 
 /* ── Hero ─────────────────────────────────────────────────────── */
 .hero{
@@ -524,6 +545,7 @@ footer{background:#08201b;color:rgba(255,255,255,.62);padding:52px 0;font-size:1
   .prob-grid,.step-grid,.stats{grid-template-columns:1fr}
   .bento-grid{grid-template-columns:1fr}
   .nav-links{display:none}
+  .lang-switch{font-size:12px;gap:8px}
   /* The stage turns into a single column: two menu bars side by side
      inside a 390px screen would be two illegible slivers. */
   .stage{grid-template-columns:1fr;gap:22px;padding:22px 18px 0;align-items:center}

@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SlimeZIP — メニューバーをスライムが片づけます</title>
+<meta name="description" content="Mac のメニューバーのアイコンをスライムがまとめて片づけるアプリ。">
+<meta property="og:title" content="SlimeZIP — 메뉴바를 슬라임이 정리합니다">
+<meta property="og:description" content="Mac のメニューバーのアイコンをスライムがまとめて片づけるアプリ。">
+<meta property="og:image" content="img/appicon.png">
+<link rel="icon" href="img/appicon.png">
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="style.css">
+
+<script>
+/* Runs before first paint so animated elements are hidden from the very
+   first frame — otherwise they render at their final position and then
+   jump back to the start, which is worse than no animation at all.
+   The fail-safe guarantees the page becomes visible even if the
+   deferred script never runs. */
+(function () {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.documentElement.classList.add('motion-pending');
+  window.__entranceFailsafe = setTimeout(function () {
+    document.documentElement.classList.remove('motion-pending');
+  }, 2400);
+})();
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="#top"><picture><source srcset="img/slime-2.webp" type="image/webp"><img src="img/slime-2.png" alt=""></picture> SlimeZIP</a>
+    <div class="nav-links">
+      <a href="#problem">なぜ必要か</a>
+      <a href="#features">機能</a>
+      <a href="#install">インストール</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a class="nav-cta" href="#install">インストール</a>
+  </div>
+
+    <div class="lang-switch"><a href="index.html">한국어</a> · <a href="index.en.html">English</a> · <b>日本語</b> · <a href="index.zh.html">简体中文</a></div>
+</nav>
+
+<header class="hero" id="top">
+  <!-- Centred, single column. The split layout put the headline in a
+       narrow column and forced the type down to fit; standing it in the
+       middle of the page lets the sentence run at full size, and the
+       product shot below gets the whole width instead of a third of it. -->
+  <div class="wrap hero-mid">
+    <span class="eyebrow anim a-eyebrow"><span class="dot"></span>Mac メニューバー整理ツール</span>
+
+    <h1 class="anim a-h1">アイコンを探して<br>見渡すのはやめましょう。</h1>
+
+    <p class="sub anim a-sub">
+      MacBook・Mac Studio・Mac mini — アイコンが 20 個を超えた瞬間から<br>
+      必要な一つが見えなくなり、画面の上が散らかります。
+    </p>
+
+    <div class="hero-cta anim a-cta">
+      <a class="btn on-green" href="#install">
+        <span class="disc"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        インストール方法
+      </a>
+      <span class="note">3 分 · 無料 · macOS 14+</span>
+    </div>
+
+    <p class="hero-trust anim a-trust">
+      アイコン <b>43 個</b> が並ぶ Mac Studio で作りました · アイコン幅 <b>22pt 固定</b>
+    </p>
+  </div>
+
+  <!-- One wide product shot under the copy, the way the reference does
+       it: before and after side by side, with the mascot showing what
+       the bar icon itself is doing. -->
+  <div class="wrap">
+    <div class="stage">
+      <figure class="mascot anim a-mascot" aria-label="아이콘을 먹고 뱉는 슬라임">
+        <img id="mascot-img" src="img/slime-1.png" alt="" width="57" height="44">
+        <figcaption><span id="mascot-count" data-unit=" 個">0 個</span> 抱えています</figcaption>
+      </figure>
+
+      <div class="stage-bars">
+        <div class="mock anim a-mock1">
+          <div class="mock-label">SlimeZIP なし</div>
+          <div class="bar before">
+            <span class="ico"></span><span class="ico"></span><span class="ico"></span>
+            <span class="ico"></span><span class="ico"></span><span class="ico"></span>
+            <span class="ico"></span><span class="ico"></span><span class="ico"></span>
+            <span class="ico"></span><span class="ico"></span>
+            <span class="clock">14:32</span>
+          </div>
+          <div class="mock-caption"><b>場所が足りません。</b> 左から静かに切られていきます。</div>
+        </div>
+
+        <div class="mock anim a-mock2">
+          <div class="mock-label">SlimeZIP あり</div>
+          <div class="bar">
+            <img class="slime breathe" src="img/slime-5.png" alt="아이콘을 물고 있는 슬라임">
+            <span class="ico"></span><span class="ico"></span><span class="ico"></span>
+            <span class="clock">14:32</span>
+          </div>
+          <div class="mock-caption"><b>スライム一匹が抱えています。</b> 押せばまた出てきます。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+<!-- ══ 화면 ═══════════════════════════════════════════════════════
+     A showcase grid rather than a feature list. Each card holds the
+     real artwork; hovering runs a pixel wipe that trades the picture
+     for the sentence explaining it, and the small squares lean toward
+     the cursor so the card feels like a surface rather than a photo.
+     ══════════════════════════════════════════════════════════════ -->
+<section class="showcase" id="features">
+  <div class="float-layer" aria-hidden="true"><span class="floater" style="left:6%;top:20%;width:12px;height:12px" data-depth="80"></span><span class="floater" style="left:12%;top:32%;width:8px;height:8px" data-depth="110"></span><span class="floater" style="left:8%;top:44%;width:6px;height:6px" data-depth="140"></span><span class="floater" style="left:88%;top:18%;width:10px;height:10px" data-depth="170"></span><span class="floater" style="left:92%;top:30%;width:14px;height:14px" data-depth="200"></span><span class="floater" style="left:85%;top:42%;width:7px;height:7px" data-depth="230"></span><span class="floater" style="left:90%;top:52%;width:5px;height:5px" data-depth="260"></span><span class="floater" style="left:14%;top:56%;width:5px;height:5px" data-depth="290"></span></div>
+
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="badge">画面</span>
+      <h2 class="display">スライムがすること<br><span class="dim">四つ</span></h2>
+    </div>
+
+    <div class="case-grid">
+      <article class="case reveal" data-case="glyph">
+        <div class="case-art">
+          <picture><source srcset="img/slime-5.webp" type="image/webp"><img src="img/slime-5.png" alt=""></picture>
+        </div>
+        <div class="pixels" aria-hidden="true"></div>
+        <p class="case-detail">抱えるほど平たくなるだけで、アイコンの幅は広がりません。</p>
+        <span class="mag" style="left:5%;top:30%;width:16px;height:16px" data-mag="0"></span><span class="mag" style="left:10%;top:42%;width:10px;height:10px" data-mag="1"></span><span class="mag" style="left:3%;top:52%;width:7px;height:7px" data-mag="2"></span><span class="mag" style="left:80%;top:70%;width:14px;height:14px" data-mag="3"></span><span class="mag" style="left:85%;top:82%;width:9px;height:9px" data-mag="4"></span><span class="mag" style="left:78%;top:60%;width:6px;height:6px" data-mag="5"></span>
+        <span class="plus" aria-hidden="true">+</span>
+        <div class="plate">
+          <h3>潰れたスライム</h3>
+          <div class="plate-meta"><span class="cat">メニューバーの表示</span><span class="num">22pt</span></div>
+        </div>
+      </article>
+      <article class="case reveal" data-case="panel">
+        <div class="case-art">
+          <picture><source srcset="img/slime-3.webp" type="image/webp"><img src="img/slime-3.png" alt=""></picture>
+        </div>
+        <div class="pixels" aria-hidden="true"></div>
+        <p class="case-detail">スライムを押すと、今バーにあるアイコンがすべて一覧に出ます。</p>
+        <span class="mag" style="left:82%;top:55%;width:16px;height:16px" data-mag="0"></span><span class="mag" style="left:88%;top:68%;width:10px;height:10px" data-mag="1"></span><span class="mag" style="left:78%;top:72%;width:7px;height:7px" data-mag="2"></span><span class="mag" style="left:85%;top:42%;width:6px;height:6px" data-mag="3"></span><span class="mag" style="left:90%;top:80%;width:8px;height:8px" data-mag="4"></span>
+        <span class="plus" aria-hidden="true">+</span>
+        <div class="plate">
+          <h3>取り出しパネル</h3>
+          <div class="plate-meta"><span class="cat">ワンクリック</span><span class="num">43 個</span></div>
+        </div>
+      </article>
+      <article class="case reveal" data-case="name">
+        <div class="case-art">
+          <picture><source srcset="img/slime-2.webp" type="image/webp"><img src="img/slime-2.png" alt=""></picture>
+        </div>
+        <div class="pixels" aria-hidden="true"></div>
+        <p class="case-detail">各アプリが公開している情報を読み、Tailscale なのかどうかを名前で示します。</p>
+        <span class="mag" style="left:4%;top:24%;width:16px;height:16px" data-mag="0"></span><span class="mag" style="left:10%;top:36%;width:10px;height:10px" data-mag="1"></span><span class="mag" style="left:2%;top:44%;width:7px;height:7px" data-mag="2"></span><span class="mag" style="left:78%;top:78%;width:14px;height:14px" data-mag="3"></span><span class="mag" style="left:84%;top:88%;width:8px;height:8px" data-mag="4"></span>
+        <span class="plus" aria-hidden="true">+</span>
+        <div class="plate">
+          <h3>名前で識別</h3>
+          <div class="plate-meta"><span class="cat">アクセシビリティ権限</span><span class="num">35 個</span></div>
+        </div>
+      </article>
+      <article class="case reveal" data-case="alert">
+        <div class="case-art">
+          <picture><source srcset="img/slime-4.webp" type="image/webp"><img src="img/slime-4.png" alt=""></picture>
+        </div>
+        <div class="pixels" aria-hidden="true"></div>
+        <p class="case-detail">隠したアイコンが変わるとスライムが反応します。待機中の CPU は 0.0%。</p>
+        <span class="mag" style="left:82%;top:26%;width:14px;height:14px" data-mag="0"></span><span class="mag" style="left:88%;top:38%;width:10px;height:10px" data-mag="1"></span><span class="mag" style="left:78%;top:44%;width:7px;height:7px" data-mag="2"></span><span class="mag" style="left:84%;top:54%;width:5px;height:5px" data-mag="3"></span><span class="mag" style="left:90%;top:60%;width:8px;height:8px" data-mag="4"></span>
+        <span class="plus" aria-hidden="true">+</span>
+        <div class="plate">
+          <h3>隠している間の通知</h3>
+          <div class="plate-meta"><span class="cat">バックグラウンド</span><span class="num">0.0%</span></div>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <!-- Closing block: the ask on the left, what the app touches scrolling
+       past on the right. The marquee used to be a band of its own under
+       the hero, where it interrupted the read for no reason. -->
+  <div class="wrap close-row">
+    <div class="close-copy reveal">
+      <span class="plus dark" aria-hidden="true">+</span>
+      <p>メニューバーが溢れるのはアイコンが多いからではなく、macOS が場所を整理してくれないからです。SlimeZIP がその整理を代わりにやります — 何がどこにあるかを名前で示し、ワンクリックで出し入れします。</p>
+      <a class="star-cta" href="https://github.com/aisyncclub/slimezip" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8L12 2z"/></svg>
+        GitHub でスターを付ける
+      </a>
+      <a class="cta-arrow" href="#install">
+        <span class="cta-label">インストールへ</span>
+        <span class="cta-badge">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.75 6V15.75C18.75 15.949 18.671 16.14 18.53 16.28C18.39 16.421 18.199 16.5 18 16.5C17.801 16.5 17.61 16.421 17.47 16.28C17.329 16.14 17.25 15.949 17.25 15.75V7.81L6.53 18.53C6.39 18.671 6.199 18.75 6 18.75C5.801 18.75 5.61 18.671 5.47 18.53C5.329 18.39 5.25 18.199 5.25 18C5.25 17.801 5.329 17.61 5.47 17.47L16.19 6.75H8.25C8.051 6.75 7.86 6.671 7.72 6.53C7.579 6.39 7.5 6.199 7.5 6C7.5 5.801 7.579 5.61 7.72 5.47C7.86 5.329 8.051 5.25 8.25 5.25H18C18.199 5.25 18.39 5.329 18.53 5.47C18.671 5.61 18.75 5.801 18.75 6Z"/></svg>
+        </span>
+      </a>
+    </div>
+
+    <div class="close-marquee">
+      <div class="marquee-track" id="logo-track">
+        <span class="logo"><svg viewBox="0 0 22 18" width="22" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,4 1,9 6,14"/><polyline points="16,4 21,9 16,14"/><line x1="13" y1="2" x2="9" y2="16"/></svg>オープンソース</span>
+        <span class="logo"><svg viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><circle cx="3" cy="3" r="2.2"/><circle cx="10" cy="3" r="2.2"/><circle cx="17" cy="3" r="2.2"/><circle cx="3" cy="10" r="2.2"/><circle cx="10" cy="10" r="2.2"/><circle cx="17" cy="10" r="2.2"/><circle cx="3" cy="17" r="2.2"/><circle cx="10" cy="17" r="2.2"/><circle cx="17" cy="17" r="2.2"/></svg>グループ分け</span>
+        <span class="logo"><svg viewBox="0 0 22 22" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="9"/><circle cx="11" cy="11" r="4"/></svg>22pt 固定</span>
+        <span class="logo"><svg viewBox="0 0 18 18" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="16" x2="16" y2="2"/><polyline points="7,2 16,2 16,11"/></svg>取り出す</span>
+        <span class="logo"><svg viewBox="0 0 22 22" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="9"/><path d="M5 11Q8 7 11 11Q14 15 17 11"/></svg>まばたき</span>
+        <span class="logo"><svg viewBox="0 0 24 18" width="24" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="0" y1="3" x2="24" y2="3"/><line x1="6" y1="9" x2="24" y2="9"/><line x1="0" y1="15" x2="18" y2="15"/></svg>並び替え</span>
+        <span class="logo"><svg viewBox="0 0 14 20" width="14" height="20" fill="currentColor"><polygon points="8,0 0,11 6,11 6,20 14,9 8,9"/></svg>即座に反応</span>
+        <span class="logo"><svg viewBox="0 0 18 18" width="18" height="18" fill="currentColor"><rect x="7.5" y="0" width="3" height="18"/><rect x="0" y="7.5" width="18" height="3"/></svg>隠す</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="problem" id="problem">
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="sec-label">問題</span>
+      <h2>アイコンが <span class="hl">見えませんよね？</span></h2>
+      <p class="lede">メニューバーの幅は決まっていて、溢れた分は黙って切られます。</p>
+    </div>
+    <div class="prob-grid reveal" data-stagger="90">
+      <div class="prob">
+        <div class="emo">✂️</div>
+        <h3>溢れた分は消えるだけ</h3>
+        <p><b>警告はありません。</b> 印もなく左から切られます。ノッチがあればもっと早く消えます。</p>
+      </div>
+      <div class="prob">
+        <div class="emo">🔍</div>
+        <h3>どのアプリのものか分からない</h3>
+        <p><b>持ち主が分かりません。</b> macOS 26 以降はコントロールセンターが代わりに描くため、ウインドウ情報では分かりません。</p>
+      </div>
+      <div class="prob">
+        <div class="emo">🖱️</div>
+        <h3>動かす手段は ⌘ドラッグだけ</h3>
+        <p><b>手で引きずるしかありません。</b> 一つずつ動かして、どこに置いたかまた忘れます。</p>
+      </div>
+    </div>
+  
+    <div class="center reveal" style="margin-top:72px">
+      <span class="sec-label">実測値</span>
+      <h3 class="sub-h">数値はすべてこの Mac で実際に計測したものです</h3>
+    </div>
+    <div class="stats reveal" data-stagger="90">
+      <div class="stat"><div class="n">35 個</div><div class="l">アプリ名まで判明したアイコン</div></div>
+      <div class="stat"><div class="n">22pt</div><div class="l">いくつ抱えても変わらないアイコン幅</div></div>
+      <div class="stat"><div class="n">0.0%</div><div class="l">待機中の CPU 使用率</div></div>
+    </div>
+    <p class="stats-note reveal">
+      まだ有名なアプリではありません。ただ上の数字はすべてこの Mac で実測して記録しました。
+    </p>
+  </div>
+</section>
+
+
+
+
+
+<section class="steps">
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="sec-label">使う流れ</span>
+      <h2>3 ステップで終わりです</h2>
+      <p class="lede">最初に一度だけ定位置を決めれば、あとはクリックだけです。</p>
+    </div>
+    <div class="step-grid reveal" data-stagger="90">
+      <div class="step">
+        <div class="n">01</div>
+        <h3>スライムをクリック</h3>
+        <p><b>一度押します。</b> 今メニューバーにあるアイコンがすべて出ます。</p>
+      </div>
+      <div class="step">
+        <div class="n">02</div>
+        <h3>入れる・出す</h3>
+        <p><b>選んで入れます。</b> 隠したいものの横のボタンを押します。複数まとめてでも構いません。</p>
+      </div>
+      <div class="step">
+        <div class="n">03</div>
+        <h3>適用</h3>
+        <p><b>最初の一度だけ再起動。</b> それで定位置が決まります。以後はクリック一つで即座に出し入れできます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="sec-label">インストール</span>
+      <h2>一行で済みます</h2>
+      <p class="lede">Xcode もビルドも要りません。すでにできているアプリを取ってきて置くだけです。</p>
+    </div>
+    <div class="install-grid reveal" data-stagger="110">
+      <div>
+<pre><span class="c"># ターミナルに貼り付け</span>
+curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash</pre>
+        <div class="callout">
+          <b>アクセシビリティ権限を一度だけ。</b> インストール後、システム設定 → プライバシーとセキュリティ → アクセシビリティで SlimeZIP をオンにしてください。この権限がないと、どのアイコンがどのアプリのものか読めず、一覧が空に見えます。
+        </div>
+        <div class="callout">
+          <b>このスクリプトがすること。</b> 最新リリースを取得してアプリケーションに置き、ダウンロード隔離のフラグを消します。まだ Apple の公証を受けていないため（有料の開発者アカウントが必要です）、このフラグが残っていると macOS が起動を止めます。手でやりたい場合は下の方法をどうぞ。
+        </div>
+      </div>
+      <div>
+        <div class="req">
+          <h3>必要なもの</h3>
+          <dl>
+            <dt>macOS</dt><dd>14 以上（26.5 で検証）</dd>
+            <dt>所要時間</dt><dd>1 分未満</dd>
+            <dt>権限</dt><dd>アクセシビリティ</dd>
+            <dt>費用</dt><dd>なし · オープンソース</dd>
+          </dl>
+        </div>
+        <div class="callout">
+          <b>ターミナルを使わずに入れる。</b>
+          <a href="https://github.com/aisyncclub/slimezip/releases">リリースページ</a> から zip を取得し、展開してアプリケーションへ移します。初回起動は macOS が止めますが、システム設定 → プライバシーとセキュリティの一番下の <b>このまま開く</b>を押せば通ります。（Sequoia 以降は右クリック → 開く では通りません。）
+        </div>
+        <div class="callout">
+          <b>ソースからビルドするなら。</b> <code>git clone</code>  のあと 
+          <code>./scripts/build-app.sh</code>。Xcode Command Line Tools が必要です —
+          <a href="https://github.com/aisyncclub/slimezip/blob/master/docs/INSTALL.md">インストールガイド</a>に書いてあります。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="faq" id="faq">
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="sec-label">FAQ</span>
+      <h2>よくある質問</h2>
+      <p class="lede">先に答えておきます。</p>
+    </div>
+    <div class="faq-list reveal" data-stagger="60">
+      <details open>
+        <summary>出し入れのたびにアプリを再起動するのですか？</summary>
+        <p>いいえ。 <b>定位置を決めるときだけ</b> 、一度だけです。アイコンの位置はそのアプリの起動時にしか読まれないためです。定位置が決まったあとは、スライムをクリックするだけで即座に出し入れできます。</p>
+      </details>
+      <details>
+        <summary>なぜアクセシビリティ権限が必要ですか？</summary>
+        <p>macOS 26 以降、ステータス項目はコントロールセンターが代わりに描きます。そのためウインドウ一覧ではすべてのアイコンが「コントロールセンターのもの」と見え、持ち主が分かりません。各アプリがアクセシビリティ経由で公開する情報を読んで初めて名前が分かります。権限がなくても畳む・広げるはできます。</p>
+      </details>
+      <details>
+        <summary>ノッチの裏に隠れたアイコンも取り出せますか？</summary>
+        <p>いいえ、この方式ではできません。アイコンを画面外へ押し出して隠す仕組みなので、すでにノッチに覆われたものは戻せません。</p>
+      </details>
+      <details>
+        <summary>隠したアプリの通知は分かりますか？</summary>
+        <p>通知そのものは検知できません。macOS が他アプリの未読状態を公開しないためです。その代わり、 <b>アイコンのタイトルやサイズが変わったとき</b> 、スライムにオレンジの点が付きます。Outlook のようにタイトルに状態を書くアプリは拾えますが、絵だけが変わるアプリは拾えません。</p>
+      </details>
+      <details>
+        <summary>それ自体がメニューバーを占領しませんか？</summary>
+        <p>スライム一匹、 <b>22pt 固定</b>です。いくつ抱えても広がりません。数は幅ではなく潰れ具合で示します。メニューバーの場所を取り戻すためのアプリが、その場所を食べてはいけないからです。</p>
+      </details>
+      <details>
+        <summary>アンインストールするとアイコンは元に戻りますか？</summary>
+        <p>移した位置は各アプリの設定に残ります。元に戻すには、アンインストール前に設定からすべて <b>取り出す</b> して適用してください。</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap reveal">
+    <img class="breathe" src="img/slime-5.png" alt="">
+    <h2>メニューバーはスライムに任せて、<br>画面は広く使いましょう。</h2>
+    <p class="lede">インストールは 3 分。一度だけ定位置を決めれば、あとはワンクリックです。</p>
+    <a class="btn on-green" href="#install">
+      <span class="disc"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      インストール方法
+    </a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div>
+        <div class="foot-brand"><picture><source srcset="img/slime-2.webp" type="image/webp"><img src="img/slime-2.png" alt=""></picture> SlimeZIP</div>
+        <p style="margin:12px 0 0;max-width:420px">
+          Mac のメニューバーのアイコンをスライムがまとめて片づけるアプリ。何がどこにあるかを名前で示し、ワンクリックで出し入れします。
+        </p>
+      </div>
+      <div class="foot-links">
+        <a href="#problem">なぜ必要か</a>
+        <a href="#features">機能</a>
+        <a href="#install">インストール</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/aisyncclub/slimezip">GitHub</a>
+      </div>
+    </div>
+    <div class="foot-note">
+      macOS 14 以上 · オープンソース · 無料<br>
+      © 2026 SlimeZIP
+    </div>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
