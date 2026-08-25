@@ -45,15 +45,38 @@ cp -R "$ROOT/Resources/Brand" "$APP/Contents/Resources/Brand"
 # designated requirement stable, so one grant survives every rebuild.
 # Ad-hoc remains the fallback so the build still works on a machine without
 # the identity; distribution later needs Developer ID plus notarization.
-IDENTITY="ZipBar Dev"
-if security find-identity -v -p codesigning 2>/dev/null | grep -q "$IDENTITY"; then
-  echo "==> codesign ($IDENTITY)"
-  codesign --force --sign "$IDENTITY" \
+# Signing identity, in order of what it buys.
+#
+#   Developer ID Application  — the only one Apple will notarise. Adds a
+#                               secure timestamp, without which the signature
+#                               expires with the certificate.
+#   ZipBar Dev                — a local self-signed cert. Not distributable,
+#                               but its fingerprint is stable, so one
+#                               accessibility grant survives every rebuild.
+#   ad-hoc                    — last resort. A new fingerprint every build,
+#                               so the grant dies each time.
+# `|| true` because grep exits 1 when it matches nothing, and under
+# `set -e` that killed the build on every machine without the certificate —
+# which is every machine until the enrolment finishes.
+DEVID="$(security find-identity -v -p codesigning 2>/dev/null \
+  | grep "Developer ID Application" | head -1 \
+  | sed 's/.*"\(.*\)".*/\1/' || true)"
+
+if [ -n "$DEVID" ]; then
+  echo "==> codesign ($DEVID) + timestamp"
+  codesign --force --sign "$DEVID" \
+    --entitlements "$ROOT/Resources/ZipBar.entitlements" \
+    --options runtime \
+    --timestamp \
+    "$APP" 2>&1 | sed 's/^/    /'
+elif security find-identity -v -p codesigning 2>/dev/null | grep -q "ZipBar Dev"; then
+  echo "==> codesign (ZipBar Dev — 배포용 아님)"
+  codesign --force --sign "ZipBar Dev" \
     --entitlements "$ROOT/Resources/ZipBar.entitlements" \
     --options runtime \
     "$APP" 2>&1 | sed 's/^/    /'
 else
-  echo "==> codesign (ad-hoc — '$IDENTITY' 인증서 없음, 권한이 리빌드마다 풀립니다)"
+  echo "==> codesign (ad-hoc — 인증서 없음, 권한이 리빌드마다 풀립니다)"
   codesign --force --sign - \
     --entitlements "$ROOT/Resources/ZipBar.entitlements" \
     --options runtime \

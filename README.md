@@ -342,6 +342,10 @@ ZIPBAR_PROBE_UPDATE=1                                              # 업데이�
 그래서 처음 열 때 시스템 설정을 한 번 거쳐야 합니다. 공증을 받으면 그 단계가 없어지고
 Homebrew cask 등록도 열립니다.
 
+준비 절차는 [docs/NOTARIZE.md](docs/NOTARIZE.md)에 단계별로 적어 뒀습니다.
+`release.sh`는 인증서와 자격증명이 갖춰지면 자동으로 공증하고, 없으면 건너뛰면서
+그렇다고 말합니다.
+
 ### 기여
 
 버그 제보와 PR 환영합니다. [이슈](https://github.com/aisyncclub/slimezip/issues)에
