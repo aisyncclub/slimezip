@@ -62,6 +62,7 @@ enum L10nTable {
         "macOS 26은 상태 아이템을 제어 센터가 대신 표시해서, 권한 없이는 어느 아이콘이 어느 앱 것인지 알 수 없습니다.":
             "On macOS 26 the status items are drawn by Control Center, so without the permission there is no way to tell which icon belongs to which app.",
         "접근성 권한 요청": "Request Accessibility",
+        "손쉬운 사용 설정 열기": "Open Accessibility settings",
         "이미 허용했는데 이 화면이 남아 있다면, 실행 중이던 앱에는 권한이 늦게 전달됩니다. 재시작하면 바로 적용됩니다.":
             "If you already granted it and this screen is still here, a running app receives the grant late. Restarting applies it at once.",
         "SlimeZIP 재시작": "Restart SlimeZIP",

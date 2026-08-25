@@ -16,6 +16,7 @@ cd "$ROOT"
 
 APP="$ROOT/dist/SlimeZIP.app"
 ZIP="$ROOT/dist/SlimeZIP-$TAG.zip"
+DMG="$ROOT/dist/SlimeZIP-$TAG.dmg"
 
 # The tag is the version. Left to a hand-edited plist it drifts — three
 # releases shipped while Info.plist still said 0.1.0, and the app's own
@@ -47,17 +48,38 @@ codesign --verify --deep --strict "$APP" && echo "    서명 OK"
 spctl -a -vvv "$APP" 2>&1 | sed 's/^/    /' || \
   echo "    (공증 안 됨 — install.sh가 격리를 해제합니다)"
 
+# The zip is what the installer script downloads; the DMG is what a person
+# double-clicks. Both ship, and install.sh filters on the .zip so the extra
+# asset cannot confuse it.
+echo "==> 디스크 이미지"
+./scripts/dmg.sh "$TAG" | sed 's/^/    /'
+
 echo "==> GitHub 릴리스 생성 — $TAG"
-gh release create "$TAG" "$ZIP" \
+gh release create "$TAG" "$ZIP" "$DMG" \
   --title "SlimeZIP $TAG" \
-  --notes "설치:
+  --notes "## 설치
+
+**\`.dmg\`를 받아 두 번 누르세요.** 창이 열리면 슬라임을 오른쪽 \"응용 프로그램\"으로
+끌어다 놓으면 됩니다. 창 안의 안내문에 그다음 단계가 적혀 있습니다.
+
+처음 열 때 macOS가 한 번 막습니다 — 앱이 손상된 게 아니라 공증을 아직 받지 않아서입니다.
+**시스템 설정 → 개인정보 보호 및 보안 → 맨 아래 '확인 없이 열기'**를 누르면 됩니다.
+(우클릭 → 열기는 세쿼이아부터 안 됩니다.)
+
+터미널이 익숙하다면 그 단계를 건너뜁니다:
 
 \`\`\`bash
-curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash
+curl -fsSL https://aisyncclub.github.io/slimezip/install.sh | bash
 \`\`\`
 
-또는 아래 zip을 내려받아 응용 프로그램으로 옮긴 뒤,
-시스템 설정 → 개인정보 보호 및 보안 → 맨 아래 '확인 없이 열기'를 눌러 주세요."
+---
+
+## Install
+
+Download the **\`.dmg\`**, open it, and drag the slime onto Applications.
+macOS blocks the first launch because the app is not notarised yet — go to
+**System Settings → Privacy & Security → Open Anyway**. From a terminal you can
+skip that step with the one-liner above."
 
 echo "완료 — https://github.com/aisyncclub/slimezip/releases/tag/$TAG"
 echo

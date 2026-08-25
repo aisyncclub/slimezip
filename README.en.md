@@ -141,8 +141,8 @@ each other flat in the same slot instead. They blink, and they breathe.
 
 ### From a download
 
-1. Get `SlimeZIP-*.zip` from [releases](https://github.com/aisyncclub/slimezip/releases/latest)
-2. Unzip and drag `SlimeZIP.app` to **Applications**
+1. Get `SlimeZIP-*.dmg` from [releases](https://github.com/aisyncclub/slimezip/releases/latest)
+2. Open it and drag the slime onto **Applications**
 3. macOS blocks the first launch → **System Settings → Privacy & Security**, scroll to the bottom, **Open Anyway**
 4. Turn SlimeZIP on in **System Settings → Accessibility**
 
@@ -153,7 +153,7 @@ each other flat in the same slot instead. They blink, and they breathe.
 ### From a terminal
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash
+curl -fsSL https://aisyncclub.github.io/slimezip/install.sh | bash
 ```
 
 Same thing, minus step 3. [Read the script first](scripts/install.sh) if you like — piping

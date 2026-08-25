@@ -81,8 +81,22 @@ struct IconListView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 380)
-            Button(L("접근성 권한 요청")) { inventory.requestAuthorization() }
-                .buttonStyle(.borderedProminent)
+            HStack(spacing: 10) {
+                Button(L("접근성 권한 요청")) { inventory.requestAuthorization() }
+                    .buttonStyle(.borderedProminent)
+
+                // The system prompt has its own "Open System Settings"
+                // button, but it appears once and is easy to dismiss by
+                // accident. This opens the exact pane at any time, which is
+                // otherwise four clicks into a settings app that has moved
+                // this list twice in three releases.
+                Button(L("손쉬운 사용 설정 열기")) {
+                    guard let url = URL(string:
+                        "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+                    else { return }
+                    NSWorkspace.shared.open(url)
+                }
+            }
 
             // A grant given while the app is running does not reach this
             // process — a relaunch is the fix, so it is offered here rather

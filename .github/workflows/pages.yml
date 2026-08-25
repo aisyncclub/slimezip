@@ -9,7 +9,7 @@ name: Pages
 on:
   push:
     branches: [master]
-    paths: ['web/**', '.github/workflows/pages.yml']
+    paths: ['web/**', 'scripts/install.sh', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -32,6 +32,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # The install one-liner is 79 characters against raw.githubusercontent
+      # and 48 against the site. Serving it here shortens what people have to
+      # type or trust at a glance.
+      - name: Publish the installer alongside the site
+        run: cp scripts/install.sh web/install.sh
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web

@@ -20,7 +20,7 @@
 
 | | |
 |---|---|
-| **1** | [내려받아 설치하기](#1-내려받아-설치하기) — 터미널 없이, 5단계 |
+| **1** | [내려받아 설치하기](#1-내려받아-설치하기) — 터미널 없이 |
 | **2** | [접근성 권한 켜기](#2-접근성-권한-켜기) — 반드시 필요합니다 |
 | **3** | [처음 써 보기](#3-처음-써-보기) |
 | **4** | [문제가 생기면](#4-문제가-생기면) |
@@ -33,17 +33,14 @@
 
 ### 1단계 — 파일 받기
 
-[**릴리스 페이지**](https://github.com/aisyncclub/slimezip/releases/latest)로 가서 `SlimeZIP-*.zip`을 내려받습니다.
+[**릴리스 페이지**](https://github.com/aisyncclub/slimezip/releases/latest)로 가서 `SlimeZIP-*.dmg`를 내려받습니다.
 
-### 2단계 — 압축 풀기
+### 2단계 — 열어서 끌어다 놓기
 
-받은 파일을 두 번 누르면 `SlimeZIP.app`이 나옵니다.
+받은 파일을 두 번 누르면 창이 하나 열립니다. 왼쪽의 슬라임을 오른쪽 **응용 프로그램**으로
+끌어다 놓으면 설치가 끝납니다.
 
-### 3단계 — 응용 프로그램으로 옮기기
-
-`SlimeZIP.app`을 **응용 프로그램** 폴더로 끌어다 놓습니다.
-
-> Finder 사이드바에 "응용 프로그램"이 없으면 `⇧⌘A`로 열 수 있습니다.
+> 창 안의 "먼저 읽어주세요.txt"에 다음 단계가 그대로 적혀 있습니다.
 
 ### 4단계 — 처음 열기
 
@@ -236,7 +233,7 @@ defaults delete com.zipbar.ZipBar
 터미널이 익숙하시면 이 한 줄이면 끝납니다.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash
+curl -fsSL https://aisyncclub.github.io/slimezip/install.sh | bash
 ```
 
 최신 릴리스를 받아 `/Applications`에 넣고, 다운로드 표시를 지운 뒤 실행합니다.

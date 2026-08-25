@@ -142,8 +142,8 @@
 
 ### 下载安装
 
-1. 从[发布页](https://github.com/aisyncclub/slimezip/releases/latest)下载 `SlimeZIP-*.zip`
-2. 解压后把 `SlimeZIP.app` 拖进**应用程序**
+1. 从[发布页](https://github.com/aisyncclub/slimezip/releases/latest)下载 `SlimeZIP-*.dmg`
+2. 打开后把史莱姆拖到右边的**应用程序**
 3. 首次打开会被 macOS 拦下 → **系统设置 → 隐私与安全性**，拉到最下方，**仍要打开**
 4. 在**系统设置 → 辅助功能**里打开 SlimeZIP
 
@@ -153,7 +153,7 @@
 ### 熟悉终端的话
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash
+curl -fsSL https://aisyncclub.github.io/slimezip/install.sh | bash
 ```
 
 只是替你跳过第 3 步，做的事情完全一样。

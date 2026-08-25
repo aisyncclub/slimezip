@@ -153,8 +153,8 @@
 
 ### 내려받아서
 
-1. [릴리스](https://github.com/aisyncclub/slimezip/releases/latest)에서 `SlimeZIP-*.zip`을 받습니다
-2. 압축을 풀고 `SlimeZIP.app`을 **응용 프로그램**으로 옮깁니다
+1. [릴리스](https://github.com/aisyncclub/slimezip/releases/latest)에서 `SlimeZIP-*.dmg`를 받습니다
+2. 두 번 눌러 열고, 슬라임을 오른쪽 **응용 프로그램**으로 끌어다 놓습니다
 3. 처음 열면 macOS가 막습니다 → **시스템 설정 → 개인정보 보호 및 보안** 맨 아래 **확인 없이 열기**
 4. **시스템 설정 → 손쉬운 사용**에서 SlimeZIP을 켭니다
 
@@ -164,7 +164,7 @@
 ### 터미널이 익숙하면
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash
+curl -fsSL https://aisyncclub.github.io/slimezip/install.sh | bash
 ```
 
 3번을 건너뛰게 해 주는 것뿐, 하는 일은 같습니다.

@@ -142,8 +142,8 @@ MacBook・Mac Studio・Mac mini で、アイコンが 20 個を超えたあた�
 
 ### ダウンロードして
 
-1. [リリース](https://github.com/aisyncclub/slimezip/releases/latest)から `SlimeZIP-*.zip` を入手
-2. 展開して `SlimeZIP.app` を**アプリケーション**へ移動
+1. [リリース](https://github.com/aisyncclub/slimezip/releases/latest)から `SlimeZIP-*.dmg` を入手
+2. 開いて、スライムを右側の**アプリケーション**へドラッグ
 3. 初回起動は macOS がブロックします → **システム設定 → プライバシーとセキュリティ**の一番下、**このまま開く**
 4. **システム設定 → アクセシビリティ**で SlimeZIP をオンに
 
@@ -154,7 +154,7 @@ MacBook・Mac Studio・Mac mini で、アイコンが 20 個を超えたあた�
 ### ターミナルに慣れているなら
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aisyncclub/slimezip/master/scripts/install.sh | bash
+curl -fsSL https://aisyncclub.github.io/slimezip/install.sh | bash
 ```
 
 手順 3 を省けるだけで、やっていることは同じです。
